@@ -1,6 +1,8 @@
 package com.example.bank_cards.controller;
 
-import com.example.bank_cards.dto.AppUserDto;
+import com.example.bank_cards.dto.CurrentUserDto;
+import com.example.bank_cards.dto.LoginDto;
+import com.example.bank_cards.dto.RegistrationDto;
 import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,11 +14,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
@@ -41,17 +43,17 @@ public class UserController {
             description = "Данные для регистрации пользователя",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = AppUserDto.class),
+                    schema = @Schema(implementation = LoginDto.class),
                     examples = {
                             @ExampleObject(
                                     name = "Пример регистрации",
-                                    value = "{\"email\": \"user@example.com\", \"password\": \"securePassword123\"}",
+                                    value = "{\"name\": \"Ivan\", \"email\": \"user@example.com\", \"password\": \"securePassword123\"}",
                                     description = "Стандартный пример регистрации пользователя"
                             )
                     }
             )
     )
-    public ResponseEntity<String> registerUser(@RequestBody AppUserDto userDto) {
+    public ResponseEntity<String> registerUser(@RequestBody RegistrationDto userDto) {
         log.info("Registering new user with email: {}", userDto.getEmail());
         String token = userService.registerUser(userDto);
         return ResponseEntity.ok(token);
@@ -71,7 +73,7 @@ public class UserController {
             description = "Данные для аутентификации",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = AppUserDto.class),
+                    schema = @Schema(implementation = LoginDto.class),
                     examples = {
                             @ExampleObject(
                                     name = "Пример входа",
@@ -81,9 +83,33 @@ public class UserController {
                     }
             )
     )
-    public ResponseEntity<String> authenticateUser(@RequestBody AppUserDto userDto) {
+    public ResponseEntity<String> authenticateUser(@RequestBody LoginDto userDto) {
         log.info("Authenticating user with email: {}", userDto.getEmail());
         String token = userService.authenticateUser(userDto);
         return ResponseEntity.ok(token);
+    }
+
+
+    @GetMapping(value = "/me")
+    @Operation(summary = "Получение информации о текущем пользователе",
+            description = "Получает данные текущего пользователя")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Пользователь успешно получен",
+                    content = @Content(schema = @Schema(implementation = CurrentUserDto.class))),
+            @ApiResponse(responseCode = "401", description = "Неверные учетные данные"),
+            @ApiResponse(responseCode = "404", description = "Пользователь не найден"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<CurrentUserDto> getCurrentUser(Authentication authentication) {
+        String phoneNumber = authentication.getName();
+        log.debug("Fetching details for currently authenticated user (principal): {}", phoneNumber);
+        AppUser user = userService.getUserByEmail(phoneNumber);
+        CurrentUserDto currentUserDto = new CurrentUserDto();
+        currentUserDto.setEmail(user.getEmail());
+        currentUserDto.setName(user.getName());
+        currentUserDto.setRole(user.getRole());
+        return ResponseEntity.ok(currentUserDto);
+
     }
 }

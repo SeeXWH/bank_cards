@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class AppUserDto {
+public class LoginDto {
     @Email(message = "Email should be a valid email address format")
     @Size(max = 100, message = "Email must not exceed 100 characters")
     private String email;

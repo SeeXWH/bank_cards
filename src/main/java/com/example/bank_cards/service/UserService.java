@@ -1,6 +1,7 @@
 package com.example.bank_cards.service;
 
-import com.example.bank_cards.dto.AppUserDto;
+import com.example.bank_cards.dto.LoginDto;
+import com.example.bank_cards.dto.RegistrationDto;
 import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.repository.UserRepository;
 import com.example.bank_cards.security.JwtTokenProvider;
@@ -10,7 +11,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -35,9 +35,9 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public String registerUser(@RequestBody AppUserDto user) {
-        if (!StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(user.getPassword())) {
-            log.warn("Authentication failed: Email or password is blank.");
+    public String registerUser(@RequestBody RegistrationDto user) {
+        if (!StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(user.getPassword()) || !StringUtils.hasText(user.getName())) {
+            log.warn("Authentication failed: Email or password or name is blank.");
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Email and password cannot be null or empty"
@@ -61,6 +61,7 @@ public class UserService {
 
         try {
             AppUser appUser = new AppUser();
+            appUser.setName(user.getName());
             appUser.setEmail(user.getEmail());
             appUser.setPassword(passwordEncoder.encode(user.getPassword().trim()));
             userRepository.save(appUser);
@@ -105,7 +106,7 @@ public class UserService {
         }
     }
 
-    public String authenticateUser(@RequestBody AppUserDto user) {
+    public String authenticateUser(@RequestBody LoginDto user) {
         if (!StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(user.getPassword())) {
             log.warn("Authentication failed: Email or password is blank.");
             throw new ResponseStatusException(
@@ -160,6 +161,32 @@ public class UserService {
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "An unexpected error occurred during authentication"
             );
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public AppUser getUserByEmail(String email) {
+        log.debug("Attempting to retrieve user by email: {}", email);
+        try {
+            return userRepository.findByEmail(email)
+                    .orElseThrow(() -> {
+                        log.warn("User not found with email: {}", email);
+                        return new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "User not found with email: " + email
+                        );
+                    });
+        }
+        catch (ResponseStatusException e) {
+            throw e;
+        }
+        catch (DataAccessException e) {
+            log.error("Database error while retrieving user by email: {}", email);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Database error retrieving user.");
+        }
+        catch (Exception e) {
+            log.error("Unexpected error retrieving user by email: {}", email);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error retrieving user.");
         }
     }
 
