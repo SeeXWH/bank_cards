@@ -1,6 +1,7 @@
 package com.example.bank_cards.model;
 
 import com.example.bank_cards.enums.Role;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,8 +25,9 @@ public class AppUser {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    private Role role;
+    private Role role = Role.USER;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "owner")
     private List<Card> cards;
 
