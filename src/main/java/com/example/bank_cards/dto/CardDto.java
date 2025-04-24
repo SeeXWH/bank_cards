@@ -1,7 +1,6 @@
 package com.example.bank_cards.dto;
 
 import com.example.bank_cards.enums.CardStatus;
-import com.example.bank_cards.model.CardLimit;
 import jakarta.persistence.Embedded;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,6 +21,6 @@ public class CardDto
     private BigDecimal balance;
     private LocalDate expiryDate;
     private CardStatus status;
-    @Embedded
-    private CardLimit cardLimit;
+    private BigDecimal dailyLimit;
+    private BigDecimal monthlyLimit;
 }

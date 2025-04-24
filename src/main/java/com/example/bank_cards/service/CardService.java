@@ -5,6 +5,7 @@ import com.example.bank_cards.dto.CardDto;
 import com.example.bank_cards.enums.CardStatus;
 import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.model.Card;
+import com.example.bank_cards.dto.CardLimitDto;
 import com.example.bank_cards.repository.CardRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -116,6 +116,22 @@ public class CardService {
         Card card = cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
         cardRepository.delete(card);
     }
+    @Transactional
+    public CardDto setCardLimit(UUID id, CardLimitDto cardLimit) {
+        if (id == null || cardLimit == null) {
+            log.warn("Attempt to set limit with null id");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id or limit cannot be null or empty");
+        }
+        Card card = cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        if (cardLimit.getDailyLimit() != null) {
+            card.setDailyLimit(cardLimit.getDailyLimit());
+        }
+        if (cardLimit.getMonthlyLimit() != null) {
+            card.setMonthlyLimit(cardLimit.getMonthlyLimit());
+        }
+        cardRepository.save(card);
+        return buildNewCardDto(card);
+    }
 
 
 
@@ -125,7 +141,6 @@ public class CardService {
         String cryptNumber = cardEncryptionService.encryptCardNumber(number);
         card.setCardNumber(cryptNumber);
         card.setExpiryDate(expiryDate);
-        card.setCardLimit(null);
         card.setOwner(owner);
         card.setBalance(BigDecimal.ZERO);
         card.setStatus(CardStatus.ACTIVE);
@@ -138,7 +153,8 @@ public class CardService {
         cardDto.setId(card.getId());
         cardDto.setCardNumber(cardNumber);
         cardDto.setExpiryDate(card.getExpiryDate());
-        cardDto.setCardLimit(card.getCardLimit());
+        cardDto.setDailyLimit(card.getDailyLimit());
+        cardDto.setMonthlyLimit(card.getMonthlyLimit());
         cardDto.setStatus(card.getStatus());
         cardDto.setBalance(card.getBalance());
         cardDto.setOwnerName(card.getOwner().getName());

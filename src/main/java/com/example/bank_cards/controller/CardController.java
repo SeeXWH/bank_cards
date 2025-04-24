@@ -2,6 +2,7 @@ package com.example.bank_cards.controller;
 
 import com.example.bank_cards.dto.CardCreateDto;
 import com.example.bank_cards.dto.CardDto;
+import com.example.bank_cards.dto.CardLimitDto;
 import com.example.bank_cards.enums.CardStatus;
 import com.example.bank_cards.model.Card;
 import com.example.bank_cards.service.CardService;
@@ -207,5 +208,51 @@ public class CardController {
 
         log.info("Card with ID: {} successfully deleted", id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/limits")
+    @Operation(summary = "Обновление лимитов карты",
+            description = "Частично обновляет дневной и/или месячный лимит карты. Можно обновлять оба лимита или только один.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Лимиты успешно обновлены",
+                    content = @Content(schema = @Schema(implementation = CardDto.class))),
+            @ApiResponse(responseCode = "400", description = "Неверные параметры запроса"),
+            @ApiResponse(responseCode = "404", description = "Карта не найдена"),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещен")
+    })
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            description = "Данные для обновления лимитов",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = CardLimitDto.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "Обновление только дневного лимита",
+                                    value = "{\"dailyLimit\": 1000}",
+                                    summary = "Пример обновления дневного лимита"
+                            ),
+                            @ExampleObject(
+                                    name = "Обновление только месячного лимита",
+                                    value = "{\"monthlyLimit\": 5000}",
+                                    summary = "Пример обновления месячного лимита"
+                            ),
+                            @ExampleObject(
+                                    name = "Обновление обоих лимитов",
+                                    value = "{\"dailyLimit\": 1000, \"monthlyLimit\": 5000}",
+                                    summary = "Пример обновления обоих лимитов"
+                            )
+                    }
+            )
+    )
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<CardDto> updateCardLimits(
+            @Parameter(description = "UUID карты", required = true,
+                    example = "123e4567-e89b-12d3-a456-426614174000")
+            @PathVariable UUID id,
+            @RequestBody CardLimitDto cardLimitDto) {
+        log.info("Attempt to update limits for card ID: {}, limits: {}", id, cardLimitDto);
+        CardDto updatedCard = cardService.setCardLimit(id, cardLimitDto);
+        log.info("Card limits updated successfully for card ID: {}", id);
+        return ResponseEntity.ok(updatedCard);
     }
 }
