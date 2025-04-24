@@ -1,9 +1,11 @@
 package com.example.bank_cards.controller;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -80,6 +82,20 @@ public class GlobalExceptionHandler {
                 .body(e.getReason());
     }
 
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<String> handleDataBaseException(DataAccessException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("Database error");
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<String> handleBadCredentialsException(BadCredentialsException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("Invalid email or password");
+    }
+
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<String> handleNoHandlerFound(NoHandlerFoundException ex) {
@@ -124,10 +140,10 @@ public class GlobalExceptionHandler {
 
 
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleException(Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .contentType(MediaType.TEXT_PLAIN)
-                .body("Internal server error");
-    }
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<String> handleException(Exception e) {
+//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                .contentType(MediaType.TEXT_PLAIN)
+//                .body("Internal server error");
+//    }
 }

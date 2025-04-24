@@ -6,11 +6,9 @@ import com.example.bank_cards.enums.CardStatus;
 import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.model.Card;
 import com.example.bank_cards.repository.CardRepository;
-import com.example.bank_cards.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -21,6 +19,7 @@ import java.time.LocalDate;
 import java.util.Random;
 import java.util.UUID;
 
+
 @Service
 @RequiredArgsConstructor
 @Log4j2
@@ -28,7 +27,7 @@ public class CardService {
     private final Random random = new Random();
     private final CardRepository cardRepository;
     private final UserService userService;
-
+    private final CardEncryptionService cardEncryptionService;
 
     @Transactional
     public CardDto createCard(CardCreateDto cardCreateDto) {
@@ -40,11 +39,11 @@ public class CardService {
     }
 
     @Transactional
-    public CardDto setCardStatus(UUID cardId, CardStatus cardStatus) {
-        if (cardId == null || cardStatus == null) {
+    public CardDto setCardStatus(UUID id, CardStatus cardStatus) {
+        if (id == null || cardStatus == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id or status cannot be null or empty");
         }
-        Card card = cardRepository.findById(cardId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        Card card = cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
         card.setStatus(cardStatus);
         cardRepository.save(card);
         return buildNewCardDto(card);
@@ -74,7 +73,9 @@ public class CardService {
 
     private Card buildNewCard(AppUser owner, LocalDate expiryDate) {
         Card card = new Card();
-        card.setCardNumber(generateUniqueCardNumber());
+        String number = generateUniqueCardNumber();
+        String cryptNumber = cardEncryptionService.encryptCardNumber(number);
+        card.setCardNumber(cryptNumber);
         card.setExpiryDate(expiryDate);
         card.setCardLimit(null);
         card.setOwner(owner);
@@ -84,8 +85,10 @@ public class CardService {
     }
 
     private CardDto buildNewCardDto(Card card) {
+        String cardNumber = cardEncryptionService.maskCardNumber(card.getCardNumber());
         CardDto cardDto = new CardDto();
-        cardDto.setCardNumber(card.getCardNumber());
+        cardDto.setId(card.getId());
+        cardDto.setCardNumber(cardNumber);
         cardDto.setExpiryDate(card.getExpiryDate());
         cardDto.setCardLimit(card.getCardLimit());
         cardDto.setStatus(card.getStatus());
@@ -106,10 +109,11 @@ public class CardService {
 
     private String generateCardNumber() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 5; i++) {
-            sb.append(String.format("%03d", random.nextInt(1000)));
-            if (i < 4) sb.append(" ");
+        for (int i = 0; i < 4; i++) {
+            sb.append(String.format("%04d", random.nextInt(10000)));
         }
         return sb.toString();
     }
+
+
 }

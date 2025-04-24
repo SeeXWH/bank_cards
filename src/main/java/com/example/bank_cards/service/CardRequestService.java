@@ -25,29 +25,16 @@ public class CardRequestService {
 
     @Transactional()
     public void crateRequestToCreateCard(String email){
-        try{
-            AppUser user = userService.getUserByEmail(email);
-            CardRequest cardRequest = new CardRequest();
-            cardRequest.setCardNumber(null);
-            cardRequest.setType(RequestType.CREATE_CARD);
-            cardRequest.setOwner(user);
-            cardRequest.setStatus(RequestStatus.PENDING);
-            cardRequestRepository.save(cardRequest);
-        } catch (ResponseStatusException e) {
-            throw e;
-        }
-        catch (DataAccessException e) {
-            log.error("Database error while retrieving user by email: {}", email);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Database error retrieving user.");
-        }
-        catch (Exception e) {
-            log.error("Unexpected error retrieving user by email: {}", email);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error retrieving user.");
-        }
+        AppUser user = userService.getUserByEmail(email);
+        CardRequest cardRequest = new CardRequest();
+        cardRequest.setCardNumber(null);
+        cardRequest.setType(RequestType.CREATE_CARD);
+        cardRequest.setOwner(user);
+        cardRequest.setStatus(RequestStatus.PENDING);
+        cardRequestRepository.save(cardRequest);
     }
     @Transactional()
     public void createRequestToBlockCard(String email, BlockCardRequestDto blockCardRequestDto){
-
         if (!StringUtils.hasText(blockCardRequestDto.getCardNumber())) {
             log.warn("Request failed: card number is blank.");
             throw new ResponseStatusException(
@@ -58,24 +45,12 @@ public class CardRequestService {
         //дописать проверку карты на то что она существует
         //допистаь проверку карты что она пренадлежит именно этому пользователю
         //пока забить хуй и сделать сервис для работы с картами
-        try{
-            AppUser user = userService.getUserByEmail(email);
-            CardRequest cardRequest = new CardRequest();
-            cardRequest.setCardNumber(blockCardRequestDto.getCardNumber());
-            cardRequest.setType(RequestType.BLOCK_CARD);
-            cardRequest.setOwner(user);
-            cardRequest.setStatus(RequestStatus.PENDING);
-            cardRequestRepository.save(cardRequest);
-        } catch (ResponseStatusException e) {
-            throw e;
-        }
-        catch (DataAccessException e) {
-            log.error("Database error while retrieving user by email: {}", email);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Database error retrieving user.");
-        }
-        catch (Exception e) {
-            log.error("Unexpected error retrieving user by email: {}", email);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error retrieving user.");
-        }
+        AppUser user = userService.getUserByEmail(email);
+        CardRequest cardRequest = new CardRequest();
+        cardRequest.setCardNumber(blockCardRequestDto.getCardNumber());
+        cardRequest.setType(RequestType.BLOCK_CARD);
+        cardRequest.setOwner(user);
+        cardRequest.setStatus(RequestStatus.PENDING);
+        cardRequestRepository.save(cardRequest);
     }
 }

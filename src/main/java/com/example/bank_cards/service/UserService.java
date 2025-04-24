@@ -43,67 +43,26 @@ public class UserService {
                     "Email and password cannot be null or empty"
             );
         }
-
-        if (!isEmailValid(user.getEmail())) {
-            log.warn("Registration failed: Invalid email.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email");
-        }
-
-        if (!isPasswordValid(user.getPassword())) {
-            log.warn("Registration failed: Invalid password.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid password");
-        }
-
+        isEmailValid(user.getEmail());
+        isPasswordValid(user.getPassword());
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             log.warn("Registration failed: User with email {} already exists.", user.getEmail());
             throw new ResponseStatusException(HttpStatus.CONFLICT, "User with this email already exists");
         }
-
-        try {
-            AppUser appUser = new AppUser();
-            appUser.setName(user.getName());
-            appUser.setEmail(user.getEmail());
-            appUser.setPassword(passwordEncoder.encode(user.getPassword().trim()));
-            userRepository.save(appUser);
-            log.info("User registered successfully with ID: {} and email: {}",
-                    appUser.getId(), appUser.getEmail()
-            );
-
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword()));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            String token = jwtTokenProvider.generateToken(user.getEmail());
-            log.debug("JWT token generated successfully for newly registered user with email: {}", user.getEmail());
-
-            return token;
-        } catch (BadCredentialsException e) {
-            log.warn("Authentication failed: Invalid credentials for email: {}", user.getEmail());
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Invalid email or password"
-            );
-        }
-        catch (AuthenticationException e) {
-            log.warn("Authentication failed: General authentication error for email: {}", user.getEmail());
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Authentication failed"
-            );
-        }
-        catch (DataAccessException e) {
-            log.error("Database error during user registration for email: {}", user.getEmail());
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Database error during registration."
-            );
-        }
-        catch (Exception e) {
-            log.error("Unexpected error during user registration for email: {}", user.getEmail());
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "An unexpected error occurred during registration."
-            );
-        }
+        AppUser appUser = new AppUser();
+        appUser.setName(user.getName());
+        appUser.setEmail(user.getEmail());
+        appUser.setPassword(passwordEncoder.encode(user.getPassword().trim()));
+        userRepository.save(appUser);
+        log.info("User registered successfully with ID: {} and email: {}",
+                appUser.getId(), appUser.getEmail()
+        );
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String token = jwtTokenProvider.generateToken(user.getEmail());
+        log.debug("JWT token generated successfully for newly registered user with email: {}", user.getEmail());
+        return token;
     }
 
     public String authenticateUser(@RequestBody LoginDto user) {
@@ -114,99 +73,51 @@ public class UserService {
                     "Email and password cannot be null or empty"
             );
         }
-
-        if (!isEmailValid(user.getEmail())) {
-            log.warn("Registration failed: Invalid email.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email");
-        }
-
-        if (!isPasswordValid(user.getPassword())) {
-            log.warn("Registration failed: Invalid password.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid password");
-        }
-
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword()));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.info("Authentication successful for email: {}", user.getEmail());
-            String token = jwtTokenProvider.generateToken(user.getEmail());
-            log.debug("JWT token generated successfully for email: {}", user.getEmail());
-            return token;
-        }
-        catch (BadCredentialsException e) {
-            log.warn("Authentication failed: Invalid credentials for email: {}", user.getEmail());
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Invalid email or password"
-            );
-        }
-        catch (AuthenticationException e) {
-            log.warn("Authentication failed: General authentication error for email: {}", user.getEmail());
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Authentication failed"
-            );
-        }
-        catch (DataAccessException e) {
-            log.error("Database error during authentication for email: {}", user.getEmail(), e);
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Database error during authentication"
-            );
-        }
-        catch (Exception e) {
-            log.error("Unexpected error during authentication for email: {}", user.getEmail(), e);
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "An unexpected error occurred during authentication"
-            );
-        }
+        isEmailValid(user.getEmail());
+        isPasswordValid(user.getPassword());
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        log.info("Authentication successful for email: {}", user.getEmail());
+        String token = jwtTokenProvider.generateToken(user.getEmail());
+        log.debug("JWT token generated successfully for email: {}", user.getEmail());
+        return token;
     }
 
     @Transactional(readOnly = true)
     public AppUser getUserByEmail(String email) {
         log.debug("Attempting to retrieve user by email: {}", email);
-        try {
-            return userRepository.findByEmail(email)
-                    .orElseThrow(() -> {
-                        log.warn("User not found with email: {}", email);
-                        return new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "User not found with email: " + email
-                        );
-                    });
-        }
-        catch (ResponseStatusException e) {
-            throw e;
-        }
-        catch (DataAccessException e) {
-            log.error("Database error while retrieving user by email: {}", email);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Database error retrieving user.");
-        }
-        catch (Exception e) {
-            log.error("Unexpected error retrieving user by email: {}", email);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error retrieving user.");
-        }
+        return userRepository.findByEmail(email)
+            .orElseThrow(() -> {
+                log.warn("User not found with email: {}", email);
+                return new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found with email: " + email
+                );
+            });
     }
 
 
-    public static boolean isPasswordValid(String password) {
-        boolean isValid = password != null && password.trim().length() >= MIN_PASSWORD_LENGTH;
-        log.trace("Password validation result for length >= {}: {}", MIN_PASSWORD_LENGTH, isValid);
-        return isValid;
+    public static void isPasswordValid(String password) {
+        boolean check = password != null && password.trim().length() >= MIN_PASSWORD_LENGTH;
+        if (!check){
+            log.warn("Registration failed: Invalid password.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid password");
+        }
     }
 
-    public static boolean isEmailValid(String email) {
+    public static void isEmailValid(String email) {
         if (email == null || email.trim().isEmpty()) {
-            log.trace("Email validation failed: email is null or empty");
-            return false;
+            log.warn("Registration failed: Invalid email.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email");
         }
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
         boolean isValid = email.matches(emailRegex);
+        if (!isValid) {
+            log.warn("Registration failed: Invalid email.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email");
+        }
 
-        log.trace("Email validation result: {}", isValid);
-        return isValid;
     }
 
 }
