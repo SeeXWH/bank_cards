@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,8 +32,12 @@ public class AppUser {
     private Role role = Role.USER;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "owner")
-    private List<Card> cards;
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+    private List<Card> cards = new ArrayList<>();
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+    private List<CardRequest> requests = new ArrayList<>();
 
 
 }

@@ -1,6 +1,7 @@
 package com.example.bank_cards.model;
 
 import com.example.bank_cards.enums.CardStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,8 +36,9 @@ public class Card {
 
     private BigDecimal balance;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "card", cascade = CascadeType.ALL)
-    private List<Transaction> transactions;
+    private List<Transaction> transactions = new ArrayList<>();
 
     @Embedded
     private CardLimit cardLimit;
