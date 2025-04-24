@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Random;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +37,17 @@ public class CardService {
         Card card = buildNewCard(owner, cardCreateDto.getExpiryDate());
         cardRepository.save(card);
         return buildNewCardDto(card);
+    }
 
+    @Transactional
+    public CardDto setCardStatus(UUID cardId, CardStatus cardStatus) {
+        if (cardId == null || cardStatus == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id or status cannot be null or empty");
+        }
+        Card card = cardRepository.findById(cardId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        card.setStatus(cardStatus);
+        cardRepository.save(card);
+        return buildNewCardDto(card);
     }
 
     private void validateCardCreationRequest(CardCreateDto dto) {

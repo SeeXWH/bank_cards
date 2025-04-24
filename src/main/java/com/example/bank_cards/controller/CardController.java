@@ -2,9 +2,12 @@ package com.example.bank_cards.controller;
 
 import com.example.bank_cards.dto.CardCreateDto;
 import com.example.bank_cards.dto.CardDto;
+import com.example.bank_cards.enums.CardStatus;
 import com.example.bank_cards.model.Card;
 import com.example.bank_cards.service.CardService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,10 +18,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/cards")
@@ -58,5 +60,37 @@ public class CardController {
         log.info("Creating new card for user with email: {}", cardCreateDto.getEmail());
         CardDto createdCard = cardService.createCard(cardCreateDto);
         return ResponseEntity.ok(createdCard);
+    }
+
+
+
+
+    @PutMapping("/set-card-status")
+    @Operation(summary = "Изменение статуса карты",
+            description = "Обновляет статус указанной карты (ACTIVE, BLOCKED, EXPIRED и т.д.)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Статус карты успешно изменен",
+                    content = @Content(schema = @Schema(implementation = CardDto.class))),
+            @ApiResponse(responseCode = "400", description = "Неверный запрос (не указан ID карты или статус)"),
+            @ApiResponse(responseCode = "404", description = "Карта с указанным ID не найдена"),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещен (требуются права ADMIN)"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    @Parameters({
+            @Parameter(name = "id", description = "UUID карты", required = true,
+                    example = "123e4567-e89b-12d3-a456-426614174000"),
+            @Parameter(name = "status", description = "Новый статус карты", required = true,
+                    schema = @Schema(implementation = CardStatus.class),
+                    examples = @ExampleObject(value = "\"ACTIVE\"", description = "Допустимые значения: ACTIVE, BLOCKED, EXPIRED"))
+    })
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    public ResponseEntity<CardDto> setCardStatus(
+            @RequestParam  UUID id,
+            @RequestParam  CardStatus status) {
+        log.info("Attempting to change status for card ID: {} to status: {}", id, status);
+        CardDto updatedCard = cardService.setCardStatus(id, status);
+        log.info("Successfully changed status for card ID: {}", id);
+
+        return ResponseEntity.ok(updatedCard);
     }
 }

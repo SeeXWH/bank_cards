@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.security.access.AccessDeniedException;
 
-import java.nio.file.AccessDeniedException;
 import java.util.stream.Collectors;
 
 
