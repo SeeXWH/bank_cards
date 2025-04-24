@@ -6,9 +6,12 @@ import com.example.bank_cards.enums.CardStatus;
 import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.model.Card;
 import com.example.bank_cards.repository.CardRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -16,8 +19,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -69,6 +75,66 @@ public class CardService {
             log.warn("Card creation failed: expiry date {} is in the past", dto.getExpiryDate());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Expiry date cannot be in the past");
         }
+    }
+
+    @Transactional(readOnly = true )
+    public List<CardDto> getCardsCurrentUser(String email,
+                                             CardStatus statusFilter,
+                                             Pageable pageable) {
+        if (!StringUtils.hasText(email)) {
+            log.warn("Attempt to get cards with empty email");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email cannot be empty");
+        }
+        log.info("Fetching cards for user: {}, status filter: {}", email, statusFilter);
+        AppUser user = userService.getUserByEmail(email);
+        Specification<Card> spec = (root, query, cb) ->
+                cb.equal(root.get("owner").get("id"), user.getId());
+        if (statusFilter != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("status"), statusFilter));
+            log.debug("Added status filter: {}", statusFilter);
+        }
+
+        Page<Card> cardsPage = cardRepository.findAll(spec, pageable);
+        if (cardsPage.isEmpty()) {
+            log.info("No cards found for user: {}", email);
+            return Collections.emptyList();
+        }
+        log.debug("Found {} cards for user: {}", cardsPage.getTotalElements(), email);
+        return cardsPage.getContent().stream()
+                .map(this::buildNewCardDto)
+                .collect(Collectors.toList());
+
+    }
+
+    @Transactional(readOnly = true)
+    public List<CardDto> getCardsByUserEmail(String userEmail,
+                                             CardStatus statusFilter,
+                                             Pageable pageable) {
+        if (!StringUtils.hasText(userEmail)) {
+            log.warn("Attempt to get cards with empty user email");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User email cannot be empty");
+        }
+
+        log.info("Fetching cards for user: {}, status filter: {}", userEmail, statusFilter);
+        userService.getUserByEmail(userEmail);
+
+        Specification<Card> spec = (root, query, cb) ->
+                cb.equal(root.get("owner").get("email"), userEmail);
+        if (statusFilter != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("status"), statusFilter));
+            log.debug("Added status filter: {}", statusFilter);
+        }
+        Page<Card> cardsPage = cardRepository.findAll(spec, pageable);
+        if (cardsPage.isEmpty()) {
+            log.info("No cards found for user: {}", userEmail);
+            return Collections.emptyList();
+        }
+        log.debug("Found {} cards for user: {}", cardsPage.getTotalElements(), userEmail);
+        return cardsPage.getContent().stream()
+                .map(this::buildNewCardDto)
+                .toList();
     }
 
     private Card buildNewCard(AppUser owner, LocalDate expiryDate) {

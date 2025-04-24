@@ -42,6 +42,4 @@ public class Card {
 
     @Embedded
     private CardLimit cardLimit;
-
-
 }

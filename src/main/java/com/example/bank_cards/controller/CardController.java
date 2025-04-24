@@ -16,10 +16,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -63,8 +71,6 @@ public class CardController {
     }
 
 
-
-
     @PutMapping("/set-card-status")
     @Operation(summary = "Изменение статуса карты",
             description = "Обновляет статус указанной карты (ACTIVE, BLOCKED, EXPIRED и т.д.)")
@@ -85,12 +91,97 @@ public class CardController {
     })
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<CardDto> setCardStatus(
-            @RequestParam  UUID id,
-            @RequestParam  CardStatus status) {
+            @RequestParam UUID id,
+            @RequestParam CardStatus status) {
         log.info("Attempting to change status for card ID: {} to status: {}", id, status);
         CardDto updatedCard = cardService.setCardStatus(id, status);
         log.info("Successfully changed status for card ID: {}", id);
 
         return ResponseEntity.ok(updatedCard);
+    }
+
+    @GetMapping("/my-cards")
+    @Operation(summary = "Получение карт текущего пользователя",
+            description = "Возвращает список карт аутентифицированного пользователя с возможностью фильтрации по статусу")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Список карт успешно получен",
+                    content = @Content(schema = @Schema(implementation = CardDto.class))),
+            @ApiResponse(responseCode = "400", description = "Неверные параметры запроса"),
+            @ApiResponse(responseCode = "401", description = "Пользователь не аутентифицирован"),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещен"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    @Parameters({
+            @Parameter(name = "status", description = "Фильтр по статусу карты",
+                    content = @Content(schema = @Schema(implementation = CardStatus.class))),
+            @Parameter(name = "page", description = "Номер страницы (начиная с 0)", example = "0"),
+            @Parameter(name = "size", description = "Размер страницы", example = "10"),
+            @Parameter(name = "sort", description = "Поле для сортировки (например, expiryDate,asc)",
+                    example = "expiryDate,asc")
+
+    })
+    public ResponseEntity<List<CardDto>> getCurrentUserCards(
+            Authentication authentication,
+            @RequestParam(required = false) CardStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "expiryDate,asc") String sort) {
+
+        try {
+            String[] sortParams = sort.split(",");
+            Sort.Direction direction = sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc")
+                    ? Sort.Direction.DESC
+                    : Sort.Direction.ASC;
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
+            log.info("Fetching cards for user: {}, status: {}, page: {}, size: {}, sort: {}",
+                    authentication.getName(), status, page, size, sort);
+            List<CardDto> cards = cardService.getCardsCurrentUser(
+                    authentication.getName(), status, pageable);
+            return ResponseEntity.ok(cards);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid sort parameter: {}", sort);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort parameter");
+        }
+    }
+
+    @GetMapping("/cards-by-user")
+    @Operation(summary = "Получение карт по email пользователя",
+            description = "Возвращает список карт для указанного пользователя с фильтрацией по статусу")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Список карт успешно получен"),
+            @ApiResponse(responseCode = "400", description = "Неверные параметры запроса"),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещен"),
+            @ApiResponse(responseCode = "404", description = "Пользователь не найден"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    @Parameters({
+            @Parameter(name = "email", description = "Email пользователя", required = true),
+            @Parameter(name = "status", description = "Фильтр по статусу карты"),
+            @Parameter(name = "page", description = "Номер страницы", example = "0"),
+            @Parameter(name = "size", description = "Размер страницы", example = "10"),
+            @Parameter(name = "sort", description = "Сортировка (поле,направление)",
+                    example = "expiryDate,asc")
+    })
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<List<CardDto>> getCardsByUser(
+            @RequestParam String email,
+            @RequestParam(required = false) CardStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "expiryDate,asc") String sort) {
+        try {
+            String[] sortParams = sort.split(",");
+            Sort.Direction direction = sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc")
+                    ? Sort.Direction.DESC
+                    : Sort.Direction.ASC;
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
+            log.info("Request cards for user: {}, status: {}, page: {}, size: {}, sort: {}",
+                    email, status, page, size, sort);
+            List<CardDto> cards = cardService.getCardsByUserEmail(email, status, pageable);
+            return ResponseEntity.ok(cards);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid sort parameter: {}", sort);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort parameter");
+        }
     }
 }

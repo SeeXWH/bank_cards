@@ -1,6 +1,7 @@
 package com.example.bank_cards.controller;
 
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -136,6 +137,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .contentType(MediaType.TEXT_PLAIN)
                 .body("Authentication failed");
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<String> handleException(PropertyReferenceException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("Bad property sort reference");
     }
 
 
