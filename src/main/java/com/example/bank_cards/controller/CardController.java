@@ -255,4 +255,28 @@ public class CardController {
         log.info("Card limits updated successfully for card ID: {}", id);
         return ResponseEntity.ok(updatedCard);
     }
+
+    @GetMapping("/{id}/number")
+    @Operation(summary = "Получение полного номера карты",
+            description = "Возвращает расшифрованный номер карты по её идентификатору.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Номер карты успешно получен",
+                    content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "400", description = "Неверный ID карты"),
+            @ApiResponse(responseCode = "404", description = "Карта не найдена"),
+            @ApiResponse(responseCode = "500", description = "Ошибка дешифрования")
+    })
+    @Parameters({
+            @Parameter(name = "id", description = "UUID карты", required = true,
+                    example = "123e4567-e89b-12d3-a456-426614174000")
+    })
+    public ResponseEntity<String> getCardNumber(
+            @PathVariable UUID id) {
+        log.info("Requesting card number for card ID: {}", id);
+
+        String decryptedNumber = cardService.getCardNumber(id);
+        log.debug("Successfully retrieved card number for ID: {}", id);
+
+        return ResponseEntity.ok(decryptedNumber);
+    }
 }

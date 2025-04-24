@@ -116,6 +116,7 @@ public class CardService {
         Card card = cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
         cardRepository.delete(card);
     }
+
     @Transactional
     public CardDto setCardLimit(UUID id, CardLimitDto cardLimit) {
         if (id == null || cardLimit == null) {
@@ -133,6 +134,15 @@ public class CardService {
         return buildNewCardDto(card);
     }
 
+    @Transactional
+    public String getCardNumber(UUID id) {
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id cannot be null or empty");
+        }
+        Card card = cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        String cryptNumber = card.getCardNumber();
+        return cardEncryptionService.decryptCardNumber(cryptNumber);
+    }
 
 
     private Card buildNewCard(AppUser owner, LocalDate expiryDate) {
