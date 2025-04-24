@@ -23,7 +23,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -135,7 +134,7 @@ public class CardController {
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
             log.info("Fetching cards for user: {}, status: {}, page: {}, size: {}, sort: {}",
                     authentication.getName(), status, page, size, sort);
-            List<CardDto> cards = cardService.getCardsCurrentUser(
+            List<CardDto> cards = cardService.getCardsByUserEmail(
                     authentication.getName(), status, pageable);
             return ResponseEntity.ok(cards);
         } catch (IllegalArgumentException e) {
@@ -183,5 +182,30 @@ public class CardController {
             log.warn("Invalid sort parameter: {}", sort);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort parameter");
         }
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Удаление карты",
+            description = "Удаляет карту по указанному идентификатору")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Карта успешно удалена"),
+            @ApiResponse(responseCode = "400", description = "Неверный ID карты"),
+            @ApiResponse(responseCode = "404", description = "Карта не найдена"),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещен"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    @Parameters({
+            @Parameter(name = "id", description = "UUID карты", required = true,
+                    example = "123e4567-e89b-12d3-a456-426614174000")
+    })
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<Void> deleteCard(
+            @PathVariable UUID id) {
+        log.info("Attempt to delete card with ID: {}", id);
+
+        cardService.deleteCard(id);
+
+        log.info("Card with ID: {} successfully deleted", id);
+        return ResponseEntity.noContent().build();
     }
 }

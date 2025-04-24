@@ -77,36 +77,6 @@ public class CardService {
         }
     }
 
-    @Transactional(readOnly = true )
-    public List<CardDto> getCardsCurrentUser(String email,
-                                             CardStatus statusFilter,
-                                             Pageable pageable) {
-        if (!StringUtils.hasText(email)) {
-            log.warn("Attempt to get cards with empty email");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email cannot be empty");
-        }
-        log.info("Fetching cards for user: {}, status filter: {}", email, statusFilter);
-        AppUser user = userService.getUserByEmail(email);
-        Specification<Card> spec = (root, query, cb) ->
-                cb.equal(root.get("owner").get("id"), user.getId());
-        if (statusFilter != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.equal(root.get("status"), statusFilter));
-            log.debug("Added status filter: {}", statusFilter);
-        }
-
-        Page<Card> cardsPage = cardRepository.findAll(spec, pageable);
-        if (cardsPage.isEmpty()) {
-            log.info("No cards found for user: {}", email);
-            return Collections.emptyList();
-        }
-        log.debug("Found {} cards for user: {}", cardsPage.getTotalElements(), email);
-        return cardsPage.getContent().stream()
-                .map(this::buildNewCardDto)
-                .collect(Collectors.toList());
-
-    }
-
     @Transactional(readOnly = true)
     public List<CardDto> getCardsByUserEmail(String userEmail,
                                              CardStatus statusFilter,
@@ -136,6 +106,18 @@ public class CardService {
                 .map(this::buildNewCardDto)
                 .toList();
     }
+
+    @Transactional
+    public void deleteCard(UUID id) {
+        if (id == null) {
+            log.warn("Attempt to delete card with null id");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id cannot be null or empty");
+        }
+        Card card = cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        cardRepository.delete(card);
+    }
+
+
 
     private Card buildNewCard(AppUser owner, LocalDate expiryDate) {
         Card card = new Card();
