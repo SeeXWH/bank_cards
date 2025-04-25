@@ -2,6 +2,7 @@ package com.example.bank_cards.service;
 
 import com.example.bank_cards.dto.LoginDto;
 import com.example.bank_cards.dto.RegistrationDto;
+import com.example.bank_cards.enums.Role;
 import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.repository.UserRepository;
 import com.example.bank_cards.security.JwtTokenProvider;
@@ -21,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -97,6 +100,19 @@ public class UserService {
             });
     }
 
+    public void changeRoleUser(String email, Role role) {
+        if (!StringUtils.hasText(email) || role == null) {
+            log.warn("Authentication failed: Email or role is blank.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Email and role cannot be null or empty"
+            );
+        }
+        AppUser user = userRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found with email: " + email));
+        user.setRole(role);
+        userRepository.save(user);
+    }
+
 
     public static void isPasswordValid(String password) {
         boolean check = password != null && password.trim().length() >= MIN_PASSWORD_LENGTH;
@@ -117,7 +133,22 @@ public class UserService {
             log.warn("Registration failed: Invalid email.");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email");
         }
+    }
 
+    @Transactional
+    public void lockUser(String email) {
+        AppUser user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.setLocked(true);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void unlockUser(String email) {
+        AppUser user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.setLocked(false);
+        userRepository.save(user);
     }
 
 }

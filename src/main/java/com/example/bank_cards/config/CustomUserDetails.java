@@ -66,7 +66,7 @@ public record CustomUserDetails(
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !appUser.isLocked();
     }
 
     @Override

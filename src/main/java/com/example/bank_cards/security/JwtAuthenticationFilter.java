@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -49,7 +50,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @Nullable HttpServletResponse response,
             @Nullable FilterChain filterChain
     ) throws ServletException, IOException {
-
         if (request == null || response == null || filterChain == null) {
             log.error("Received null request, response, or filterChain. Aborting filter processing.");
             if (response != null) {
@@ -59,55 +59,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         final String requestURI = request.getRequestURI();
+        String jwt = getJwtFromRequest(request);
 
-        try {
-            String jwt = getJwtFromRequest(request);
+        if (StringUtils.hasText(jwt)) {
+            if (tokenProvider.validateToken(jwt)) {
+                String email = tokenProvider.getEmailFromToken(jwt);
 
-            if (StringUtils.hasText(jwt)) {
-
-                if (tokenProvider.validateToken(jwt)) {
-                    String email = tokenProvider.getEmailFromToken(jwt);
-
-                    if (!StringUtils.hasText(email)) {
-                        SecurityContextHolder.clearContext();
-                    } else {
-                        CustomUserDetails userDetails =
-                                (CustomUserDetails) userDetailsService.loadUserByUsername(email);
-                        JwtAuthenticationToken authentication = new JwtAuthenticationToken(
-                                userDetails, jwt, userDetails.getAuthorities());
-                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-                        log.info("Successfully authenticated user '{}' via JWT for URI: {}",
-                                userDetails.getUsername(), requestURI
-                        );
-                    }
-                } else {
-                    log.warn("JWT token validation failed for URI: {}. Token might be expired or invalid.", requestURI);
+                if (!StringUtils.hasText(email)) {
                     SecurityContextHolder.clearContext();
+                } else {
+                    CustomUserDetails userDetails =
+                            (CustomUserDetails) userDetailsService.loadUserByUsername(email);
+                    if (userDetails.appUser().isLocked()) {
+                        log.warn("Blocked user '{}' attempted to access URI: {}", email, requestURI);
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN, "User is blocked");
+                        return;
+                    }
+                    JwtAuthenticationToken authentication = new JwtAuthenticationToken(
+                            userDetails, jwt, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.info("Successfully authenticated user '{}' via JWT for URI: {}",
+                            userDetails.getUsername(), requestURI
+                    );
                 }
             } else {
-                log.trace(
-                        "No JWT found in Authorization header for URI: {}. Proceeding without authentication.",
-                        requestURI
-                );
+                log.warn("JWT token validation failed for URI: {}. Token might be expired or invalid.", requestURI);
+                SecurityContextHolder.clearContext();
             }
-        }
-        catch (ResponseStatusException rse) {
-            log.error("ResponseStatusException during JWT processing for URI: {}. Status: {}, Reason: {}",
-                    requestURI, rse.getStatusCode(), rse.getReason(), rse
+        } else {
+            log.trace(
+                    "No JWT found in Authorization header for URI: {}. Proceeding without authentication.",
+                    requestURI
             );
-            SecurityContextHolder.clearContext();
-            response.sendError(rse.getStatusCode().value(), rse.getReason());
-            return;
         }
-        catch (Exception ex) {
-            log.error("Failed to process JWT authentication for URI: {}. Error: {}", requestURI, ex.getMessage(), ex);
-            SecurityContextHolder.clearContext();
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication processing failed due to an "
-                    + "internal error.");
-            return;
-        }
+
         filterChain.doFilter(request, response);
     }
 }
+

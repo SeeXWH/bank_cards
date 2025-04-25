@@ -39,5 +39,8 @@ public class AppUser {
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
     private List<CardRequest> requests = new ArrayList<>();
 
+    @Column(nullable = false)
+    private boolean locked = false;
+
 
 }

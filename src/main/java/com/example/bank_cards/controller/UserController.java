@@ -3,6 +3,7 @@ package com.example.bank_cards.controller;
 import com.example.bank_cards.dto.CurrentUserDto;
 import com.example.bank_cards.dto.LoginDto;
 import com.example.bank_cards.dto.RegistrationDto;
+import com.example.bank_cards.enums.Role;
 import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -110,5 +111,40 @@ public class UserController {
         currentUserDto.setRole(user.getRole());
         return ResponseEntity.ok(currentUserDto);
 
+    }
+
+    @PatchMapping("/change-role")
+    @Operation(summary = "Изменение роли пользователя",
+            description = "Изменяет роль пользователя по email (только для администраторов)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Роль успешно изменена"),
+            @ApiResponse(responseCode = "400", description = "Неверный запрос (email или роль пустые)"),
+            @ApiResponse(responseCode = "401", description = "Неавторизованный доступ"),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещён (требуются права администратора)"),
+            @ApiResponse(responseCode = "404", description = "Пользователь не найден"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<Void> changeUserRole(
+            @RequestParam String email,
+            @RequestParam Role role
+    ) {
+        log.info("Changing role for user with email: {} to {}", email, role);
+        userService.changeRoleUser(email, role);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PutMapping("/{email}/lock")
+    public ResponseEntity<Void> lockUser(@PathVariable String email) {
+        userService.lockUser(email);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{email}/unlock")
+    public ResponseEntity<Void> unlockUser(@PathVariable String email) {
+        userService.unlockUser(email);
+        return ResponseEntity.ok().build();
     }
 }

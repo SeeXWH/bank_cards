@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -140,10 +141,17 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(PropertyReferenceException.class)
-    public ResponseEntity<String> handleException(PropertyReferenceException e) {
+    public ResponseEntity<String> handlePropertyReferenceException(PropertyReferenceException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .contentType(MediaType.TEXT_PLAIN)
                 .body("Bad property sort reference");
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<String> handleLockedException(LockedException e) {
+        return ResponseEntity.status(HttpStatus.LOCKED)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("Account is locked");
     }
 
 

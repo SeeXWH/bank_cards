@@ -42,6 +42,8 @@ public class SecurityConfig {
             "/api/users/recoveryPassword/**"
     };
 
+    private final CustomUserDetailsService userDetailsService;
+
     @Bean
     @NonNull
     public SecurityFilterChain securityFilterChain(
@@ -56,6 +58,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/moderator/**").hasAnyRole("ADMIN")
                         .anyRequest().authenticated()
                 )
+                .userDetailsService(userDetailsService)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
