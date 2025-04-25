@@ -49,6 +49,9 @@ public class CardService {
         if (id == null || cardStatus == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id or status cannot be null or empty");
         }
+        if (cardStatus == CardStatus.EXPIRED){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cannot manually set status to EXPIRED");
+        }
         Card card = cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
         card.setStatus(cardStatus);
         cardRepository.save(card);

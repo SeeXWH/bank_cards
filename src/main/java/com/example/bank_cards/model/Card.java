@@ -40,7 +40,9 @@ public class Card {
     @OneToMany(mappedBy = "card", cascade = CascadeType.ALL)
     private List<Transaction> transactions = new ArrayList<>();
 
-    private BigDecimal dailyLimit = BigDecimal.ZERO;
+    private BigDecimal dailyLimit = null;
+    private BigDecimal currentDailySpending = BigDecimal.ZERO;
 
-    private BigDecimal monthlyLimit = BigDecimal.ZERO;
+    private BigDecimal monthlyLimit = null;
+    private BigDecimal currentMonthlySpending = BigDecimal.ZERO;
 }

@@ -87,7 +87,7 @@ public class CardController {
                     example = "123e4567-e89b-12d3-a456-426614174000"),
             @Parameter(name = "status", description = "Новый статус карты", required = true,
                     schema = @Schema(implementation = CardStatus.class),
-                    examples = @ExampleObject(value = "\"ACTIVE\"", description = "Допустимые значения: ACTIVE, BLOCKED, EXPIRED"))
+                    examples = @ExampleObject(value = "\"ACTIVE\"", description = "Допустимые значения: ACTIVE, BLOCKED"))
     })
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<CardDto> setCardStatus(
