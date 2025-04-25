@@ -1,8 +1,12 @@
 package com.example.bank_cards.controller;
 
 import com.example.bank_cards.dto.BlockCardRequestDto;
+import com.example.bank_cards.enums.CardStatus;
+import com.example.bank_cards.enums.RequestStatus;
 import com.example.bank_cards.service.CardRequestService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/card-requests")
@@ -67,13 +73,38 @@ public class CardRequestController {
                     }
             )
     )
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> blockCardRequest(
             Authentication authentication,
             @RequestBody BlockCardRequestDto blockCardRequestDto) {
         String email = authentication.getName();
         log.info("Creating block card request for user: {}, card: {}", email, blockCardRequestDto.getCardNumber());
         cardRequestService.createRequestToBlockCard(email, blockCardRequestDto);
+        return ResponseEntity.ok().build();
+    }
+
+
+    @PutMapping("/set-status")
+    @Operation(summary = "Изменение статуса запроса",
+            description = "Обновляет статус указанного запроса")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Статус запроса успешно обновлен"),
+            @ApiResponse(responseCode = "400", description = "Неверный запрос (не указан ID запроса или статус)"),
+            @ApiResponse(responseCode = "401", description = "Неавторизованный доступ"),
+            @ApiResponse(responseCode = "404", description = "Запрос не найден"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    public ResponseEntity<Void> updateRequestStatus(
+            Authentication authentication,
+            @Parameter(description = "ID запроса", required = true)
+            @RequestParam UUID requestId,
+            @RequestParam RequestStatus requestStatus) {
+
+        String email = authentication.getName();
+        log.info("Updating request status for user: {}, requestId: {}, new status: {}",
+                email, requestId, requestStatus);
+
+        cardRequestService.setRequestStatus(requestId, requestStatus);
         return ResponseEntity.ok().build();
     }
 

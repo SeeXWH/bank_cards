@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -60,5 +61,14 @@ public class CardRequestService {
         cardRequest.setOwner(user);
         cardRequest.setStatus(RequestStatus.PENDING);
         cardRequestRepository.save(cardRequest);
+    }
+
+    public CardRequest setRequestStatus(UUID requestId, RequestStatus requestStatus){
+        if (requestId == null || requestStatus == null ) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id or status cannot be null or empty");
+        }
+        CardRequest cardRequest = cardRequestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "request not found"));
+        cardRequest.setStatus(requestStatus);
+        return cardRequestRepository.save(cardRequest);
     }
 }
