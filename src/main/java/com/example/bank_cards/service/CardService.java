@@ -144,6 +144,18 @@ public class CardService {
         return cardEncryptionService.decryptCardNumber(cryptNumber);
     }
 
+    public Card findCardByNumber(String cardNumber) {
+        if (!StringUtils.hasText(cardNumber)) {
+            log.warn("Request failed: card number is blank.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "card number cannot be null or empty"
+            );
+        }
+        String cryptNumber = cardEncryptionService.encryptCardNumber(cardNumber);
+        return cardRepository.findByCardNumber(cryptNumber).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+    }
+
 
     private Card buildNewCard(AppUser owner, LocalDate expiryDate) {
         Card card = new Card();

@@ -4,6 +4,7 @@ import com.example.bank_cards.dto.BlockCardRequestDto;
 import com.example.bank_cards.enums.RequestStatus;
 import com.example.bank_cards.enums.RequestType;
 import com.example.bank_cards.model.AppUser;
+import com.example.bank_cards.model.Card;
 import com.example.bank_cards.model.CardRequest;
 import com.example.bank_cards.repository.CardRequestRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Objects;
+
 @Service
 @RequiredArgsConstructor
 @Log4j2
@@ -22,12 +25,12 @@ public class CardRequestService {
 
     private final CardRequestRepository cardRequestRepository;
     private final UserService userService;
+    private final CardService cardService;
 
     @Transactional()
     public void crateRequestToCreateCard(String email){
         AppUser user = userService.getUserByEmail(email);
         CardRequest cardRequest = new CardRequest();
-        cardRequest.setCardNumber(null);
         cardRequest.setType(RequestType.CREATE_CARD);
         cardRequest.setOwner(user);
         cardRequest.setStatus(RequestStatus.PENDING);
@@ -42,12 +45,17 @@ public class CardRequestService {
                     "card number cannot be null or empty"
             );
         }
-        //дописать проверку карты на то что она существует
-        //допистаь проверку карты что она пренадлежит именно этому пользователю
-        //пока забить хуй и сделать сервис для работы с картами
         AppUser user = userService.getUserByEmail(email);
+        Card card = cardService.findCardByNumber(blockCardRequestDto.getCardNumber());
+        if (!Objects.equals(card.getOwner().getId(), user.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You do not have permission to block this card."
+            );
+        }
+
         CardRequest cardRequest = new CardRequest();
-        cardRequest.setCardNumber(blockCardRequestDto.getCardNumber());
+        cardRequest.setCardId(card.getId());
         cardRequest.setType(RequestType.BLOCK_CARD);
         cardRequest.setOwner(user);
         cardRequest.setStatus(RequestStatus.PENDING);

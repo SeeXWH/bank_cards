@@ -24,7 +24,7 @@ public class CardRequest {
     @JoinColumn(name = "owner_id")
     private AppUser owner;
 
-    private String cardNumber;
+    private UUID cardId;
 
     @Enumerated(EnumType.STRING)
     private RequestType type;
