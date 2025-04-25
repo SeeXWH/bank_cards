@@ -1,32 +1,51 @@
 package com.example.bank_cards.service;
 
-import org.jasypt.util.text.AES256TextEncryptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
 
 @Service
 public class CardEncryptionService {
 
-    private final AES256TextEncryptor encryptor;
+    private final SecretKeySpec key;
 
-    public CardEncryptionService(@Value("${jasypt.encryptor.password}") String password) {
-        this.encryptor = new AES256TextEncryptor();
-        this.encryptor.setPassword(password);
+    public CardEncryptionService(@Value("${encryption.secret}") String secret) {
+        byte[] keyBytes = new byte[32];
+        byte[] secretBytes = secret.getBytes();
+        System.arraycopy(secretBytes, 0, keyBytes, 0, Math.min(secretBytes.length, keyBytes.length));
+        this.key = new SecretKeySpec(keyBytes, "AES");
     }
 
     public String encryptCardNumber(String cardNumber) {
         if (!cardNumber.matches("\\d{16}")) {
             throw new IllegalArgumentException("Card number must be 16 digits");
         }
-        return encryptor.encrypt(cardNumber);
+        try {
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+            byte[] encrypted = cipher.doFinal(cardNumber.getBytes());
+            return Base64.getEncoder().encodeToString(encrypted);
+        } catch (Exception e) {
+            throw new RuntimeException("Encryption error", e);
+        }
     }
 
     public String decryptCardNumber(String encryptedCardNumber) {
-        return encryptor.decrypt(encryptedCardNumber);
+        try {
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipher.init(Cipher.DECRYPT_MODE, key);
+            byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(encryptedCardNumber));
+            return new String(decrypted);
+        } catch (Exception e) {
+            throw new RuntimeException("Decryption error", e);
+        }
     }
 
-    public String maskCardNumber(String cardNumber) {
-        String decrypted = decryptCardNumber(cardNumber);
+    public String maskCardNumber(String encryptedCardNumber) {
+        String decrypted = decryptCardNumber(encryptedCardNumber);
         return decrypted.substring(0, 4) + "******" + decrypted.substring(12);
     }
 }

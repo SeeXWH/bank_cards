@@ -61,7 +61,7 @@ public class CardRequestController {
                     examples = {
                             @ExampleObject(
                                     name = "Пример запроса",
-                                    value = "{\"cardNumber\": \"123 456 789 0123 456\"}",
+                                    value = "{\"cardNumber\": \"1234567890123456\"}",
                                     description = "Пример запроса на блокировку карты"
                             )
                     }

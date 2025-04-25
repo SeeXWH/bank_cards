@@ -69,6 +69,5 @@ springdoc:
   api-docs:
     path: /api/api-docs
 
-jasypt:
-  encryptor:
-    password: ymMfhyWVONVZSsrVTbVAQdnSoCjQObleBrrqJEQCDIzYvGwSVm
+encryption:
+  secret: ymMfhyWVONVZSsrVTbVAQdnSoCjQObleBrrqJEQCDIzYvGwSVm

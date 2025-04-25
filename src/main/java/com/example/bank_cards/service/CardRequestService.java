@@ -9,7 +9,6 @@ import com.example.bank_cards.model.CardRequest;
 import com.example.bank_cards.repository.CardRequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +44,7 @@ public class CardRequestService {
                     "card number cannot be null or empty"
             );
         }
+
         AppUser user = userService.getUserByEmail(email);
         Card card = cardService.findCardByNumber(blockCardRequestDto.getCardNumber());
         if (!Objects.equals(card.getOwner().getId(), user.getId())) {
