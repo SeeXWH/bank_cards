@@ -1,6 +1,5 @@
 package com.example.bank_cards.model;
 
-import com.example.bank_cards.dto.CardLimitDto;
 import com.example.bank_cards.enums.CardStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;

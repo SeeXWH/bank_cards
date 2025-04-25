@@ -1,10 +1,8 @@
 package com.example.bank_cards.controller;
 
 import com.example.bank_cards.dto.BlockCardRequestDto;
-import com.example.bank_cards.enums.CardStatus;
 import com.example.bank_cards.enums.RequestStatus;
 import com.example.bank_cards.enums.RequestType;
-import com.example.bank_cards.model.Card;
 import com.example.bank_cards.model.CardRequest;
 import com.example.bank_cards.service.CardRequestService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -199,7 +197,7 @@ public class CardRequestController {
             @RequestParam(defaultValue = "createdAt,desc") String sort
     ) {
         try {
-            String email = authentication.getName(); // либо email в токене, либо username
+            String email = authentication.getName();
             String[] sortParams = sort.split(",");
             Sort.Direction direction = sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc")
                     ? Sort.Direction.DESC

@@ -1,6 +1,5 @@
 package com.example.bank_cards.enums;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 

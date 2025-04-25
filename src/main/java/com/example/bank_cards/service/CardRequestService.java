@@ -92,10 +92,10 @@ public class CardRequestService {
         log.info("Fetching card requests. userEmail: {}, type: {}, status: {}, from: {}, to: {}",
                 userEmail, typeFilter, statusFilter, from, to);
 
-        Specification<CardRequest> spec = Specification.where(null); // стартуем с пустого фильтра
+        Specification<CardRequest> spec = Specification.where(null);
 
         if (StringUtils.hasText(userEmail)) {
-            userService.getUserByEmail(userEmail); // валидация, что такой пользователь есть
+            userService.getUserByEmail(userEmail);
             spec = spec.and((root, query, cb) ->
                     cb.equal(root.get("owner").get("email"), userEmail));
         }

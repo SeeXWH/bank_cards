@@ -1,7 +1,6 @@
 package com.example.bank_cards.dto;
 
 import com.example.bank_cards.enums.CardStatus;
-import jakarta.persistence.Embedded;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
