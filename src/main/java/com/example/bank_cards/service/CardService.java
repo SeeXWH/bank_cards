@@ -146,7 +146,7 @@ public class CardService {
         String cryptNumber = card.getCardNumber();
         return cardEncryptionService.decryptCardNumber(cryptNumber);
     }
-
+    @Transactional(readOnly = true)
     public Card findCardByNumber(String cardNumber) {
         if (!StringUtils.hasText(cardNumber)) {
             log.warn("Request failed: card number is blank.");
@@ -157,6 +157,24 @@ public class CardService {
         }
         String cryptNumber = cardEncryptionService.encryptCardNumber(cardNumber);
         return cardRepository.findByCardNumber(cryptNumber).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public Card findCardById(UUID id) {
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id cannot be null or empty");
+        }
+        return cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+    }
+    @Transactional
+    public void updateCard(Card card){
+        if (card == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "card cannot be null or empty");
+        }
+        if (!cardRepository.existsById(card.getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found");
+        }
+        cardRepository.save(card);
     }
 
 

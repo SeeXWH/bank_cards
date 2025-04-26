@@ -22,8 +22,12 @@ public class Transaction {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "card_id")
-    private Card card;
+    @JoinColumn(name = "send_card_id")
+    private Card sendCard;
+
+    @ManyToOne
+    @JoinColumn(name = "receive_card_id")
+    private Card receiveCard;
 
     private LocalDateTime createdAt;
 
@@ -31,8 +35,6 @@ public class Transaction {
 
     @Enumerated(EnumType.STRING)
     private TransactionType type;
-
-    private String description;
 
     @PrePersist
     protected void onCreate() {

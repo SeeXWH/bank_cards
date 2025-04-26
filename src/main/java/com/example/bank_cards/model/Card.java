@@ -37,8 +37,12 @@ public class Card {
     private BigDecimal balance;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "card", cascade = CascadeType.ALL)
-    private List<Transaction> transactions = new ArrayList<>();
+    @OneToMany(mappedBy = "sendCard")
+    private List<Transaction> sentTransactions;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "receiveCard")
+    private List<Transaction> receivedTransactions;
 
     private BigDecimal dailyLimit = null;
     private BigDecimal currentDailySpending = BigDecimal.ZERO;
