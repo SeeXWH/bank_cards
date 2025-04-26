@@ -1,5 +1,7 @@
 package com.example.bank_cards.service;
 
+import com.example.bank_cards.dto.TransactionDto;
+import com.example.bank_cards.dto.TransactionFilter;
 import com.example.bank_cards.enums.CardStatus;
 import com.example.bank_cards.enums.TransactionType;
 import com.example.bank_cards.model.AppUser;
@@ -7,14 +9,23 @@ import com.example.bank_cards.model.Card;
 import com.example.bank_cards.model.Transaction;
 import com.example.bank_cards.repository.CardRepository;
 import com.example.bank_cards.repository.TransactionRepository;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -24,6 +35,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final CardService cardService;
     private final UserService userService;
+    private final CardEncryptionService cardEncryptionService;
 
 
     @Transactional
@@ -116,6 +128,60 @@ public class TransactionService {
             }
         }
     }
+
+    @Transactional(readOnly = true)
+    public List<TransactionDto> getTransactions(String userEmail, TransactionFilter filter, Pageable pageable) {
+        log.info("Fetching transactions, userEmail: {}, filters: {}", userEmail, filter);
+        Specification<Transaction> spec = Specification.where(null);
+        if (StringUtils.hasText(userEmail)) {
+            AppUser user = userService.getUserByEmail(userEmail);
+            spec = (root, query, cb) -> {
+                Join<Transaction, Card> sendCardJoin = root.join("sendCard", JoinType.LEFT);
+                Join<Transaction, Card> receiveCardJoin = root.join("receiveCard", JoinType.LEFT);
+                Predicate userSendPredicate = cb.equal(sendCardJoin.get("owner").get("id"), user.getId());
+                Predicate userReceivePredicate = cb.equal(receiveCardJoin.get("owner").get("id"), user.getId());
+                return cb.or(userSendPredicate, userReceivePredicate);
+            };
+        }
+        if (filter.getCardId() != null) {
+            spec = spec.and((root, query, cb) -> {
+                Join<Transaction, Card> sendCardJoin = root.join("sendCard", JoinType.LEFT);
+                Join<Transaction, Card> receiveCardJoin = root.join("receiveCard", JoinType.LEFT);
+                Predicate sendPredicate = cb.equal(sendCardJoin.get("id"), filter.getCardId());
+                Predicate receivePredicate = cb.equal(receiveCardJoin.get("id"), filter.getCardId());
+                return cb.or(sendPredicate, receivePredicate);
+            });
+        }
+        if (filter.getType() != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("type"), filter.getType()));
+        }
+        if (filter.getAmountFrom() != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("amount"), filter.getAmountFrom()));
+        }
+        if (filter.getAmountTo() != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("amount"), filter.getAmountTo()));
+        }
+        if (filter.getCreatedAtFrom() != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("createdAt"), filter.getCreatedAtFrom()));
+        }
+        if (filter.getCreatedAtTo() != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("createdAt"), filter.getCreatedAtTo()));
+        }
+        Page<Transaction> transactionsPage = transactionRepository.findAll(spec, pageable);
+        if (transactionsPage.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return transactionsPage.getContent().stream()
+                .map(this::transactionToDto)
+                .toList();
+    }
+
+
     private void verifyingPossibilityOfTransaction(Card card) {
         if (card.getStatus() == CardStatus.BLOCKED) {
             throw new ResponseStatusException(HttpStatus.LOCKED, "The card has blocked");
@@ -123,6 +189,23 @@ public class TransactionService {
         if (card.getStatus() == CardStatus.EXPIRED) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "The card has expired");
         }
+    }
+
+    private TransactionDto transactionToDto(Transaction transaction) {
+        TransactionDto transactionDto = new TransactionDto();
+        transactionDto.setId(transaction.getId());
+        transactionDto.setAmount(transaction.getAmount());
+        transactionDto.setType(transaction.getType());
+        if (transaction.getSendCard() != null){
+            String sendCardNumber = cardEncryptionService.maskCardNumber(transaction.getSendCard().getCardNumber());
+            transactionDto.setSendCardNumber(sendCardNumber);
+        }
+        if (transaction.getReceiveCard() != null){
+            String receiveCardNumber = cardEncryptionService.maskCardNumber(transaction.getReceiveCard().getCardNumber());
+            transactionDto.setReceiveCardNumber(receiveCardNumber);
+        }
+        transactionDto.setCreatedAt(transaction.getCreatedAt());
+        return transactionDto;
     }
 }
 

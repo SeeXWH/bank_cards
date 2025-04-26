@@ -1,10 +1,12 @@
 package com.example.bank_cards.controller;
 
-import com.example.bank_cards.dto.DebitRequestDto;
-import com.example.bank_cards.dto.TopUpRequestDto;
-import com.example.bank_cards.dto.TransferRequestDto;
+import com.example.bank_cards.dto.*;
+import com.example.bank_cards.enums.TransactionType;
+import com.example.bank_cards.model.Transaction;
 import com.example.bank_cards.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,9 +15,21 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/transaction")
@@ -131,5 +145,125 @@ public class TransactionController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/my-transactions")
+    @Operation(summary = "Получение транзакций текущего пользователя",
+            description = "Возвращает список транзакций, где участвуют карты аутентифицированного пользователя, с возможностью фильтрации по типу, сумме, дате создания и конкретной карте")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Список транзакций успешно получен",
+                    content = @Content(schema = @Schema(implementation = TransactionDto.class))),
+            @ApiResponse(responseCode = "400", description = "Неверные параметры запроса"),
+            @ApiResponse(responseCode = "401", description = "Пользователь не аутентифицирован"),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещен"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    @Parameters({
+            @Parameter(name = "type", description = "Тип транзакции", content = @Content(schema = @Schema(implementation = TransactionType.class))),
+            @Parameter(name = "amountFrom", description = "Минимальная сумма транзакции"),
+            @Parameter(name = "amountTo", description = "Максимальная сумма транзакции"),
+            @Parameter(name = "createdAtFrom", description = "Дата создания транзакции от (в формате ISO 8601)"),
+            @Parameter(name = "createdAtTo", description = "Дата создания транзакции до (в формате ISO 8601)"),
+            @Parameter(name = "cardId", description = "ID карты, участвующей в транзакции"),
+            @Parameter(name = "page", description = "Номер страницы", example = "0"),
+            @Parameter(name = "size", description = "Размер страницы", example = "10"),
+            @Parameter(name = "sort", description = "Сортировка (например, createdAt,desc)", example = "createdAt,desc")
+    })
+    public ResponseEntity<List<TransactionDto>> getCurrentUserTransactions(
+            Authentication authentication,
+            @RequestParam(required = false) TransactionType type,
+            @RequestParam(required = false) BigDecimal amountFrom,
+            @RequestParam(required = false) BigDecimal amountTo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtTo,
+            @RequestParam(required = false) UUID cardId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+
+        try {
+            String[] sortParams = sort.split(",");
+            Sort.Direction direction = sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc")
+                    ? Sort.Direction.DESC
+                    : Sort.Direction.ASC;
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
+
+            log.info("Fetching transactions for user: {}, filters: type={}, amountFrom={}, amountTo={}, createdAtFrom={}, createdAtTo={}, cardId={}, page={}, size={}, sort={}",
+                    authentication.getName(), type, amountFrom, amountTo, createdAtFrom, createdAtTo, cardId, page, size, sort);
+
+            TransactionFilter filter = new TransactionFilter();
+            filter.setType(type);
+            filter.setAmountFrom(amountFrom);
+            filter.setAmountTo(amountTo);
+            filter.setCreatedAtFrom(createdAtFrom);
+            filter.setCreatedAtTo(createdAtTo);
+            filter.setCardId(cardId);
+
+            List<TransactionDto> transactions = transactionService.getTransactions(authentication.getName(), filter, pageable);
+
+            return ResponseEntity.ok(transactions);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid sort parameter: {}", sort);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort parameter");
+        }
+    }
+
+    @GetMapping("/transactions-by-user")
+    @Operation(summary = "Получение транзакций по пользователю (только для администраторов)",
+            description = "Позволяет администраторам получить все транзакции с возможностью фильтрации по типу, сумме, дате создания и конкретной карте")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Список транзакций успешно получен",
+                    content = @Content(schema = @Schema(implementation = TransactionDto.class))),
+            @ApiResponse(responseCode = "400", description = "Неверные параметры запроса"),
+            @ApiResponse(responseCode = "403", description = "Доступ запрещен"),
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
+    })
+    @Parameters({
+            @Parameter(name = "type", description = "Тип транзакции"),
+            @Parameter(name = "amountFrom", description = "Минимальная сумма транзакции"),
+            @Parameter(name = "amountTo", description = "Максимальная сумма транзакции"),
+            @Parameter(name = "createdAtFrom", description = "Дата создания транзакции от"),
+            @Parameter(name = "createdAtTo", description = "Дата создания транзакции до"),
+            @Parameter(name = "cardId", description = "ID карты, участвующей в транзакции"),
+            @Parameter(name = "page", description = "Номер страницы", example = "0"),
+            @Parameter(name = "size", description = "Размер страницы", example = "10"),
+            @Parameter(name = "sort", description = "Сортировка (например, createdAt,desc)", example = "createdAt,desc")
+    })
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<List<TransactionDto>> getTransactionsByUser(
+            @RequestParam(required = false) TransactionType type,
+            @RequestParam(required = false) BigDecimal amountFrom,
+            @RequestParam(required = false) BigDecimal amountTo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtTo,
+            @RequestParam(required = false) UUID cardId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+
+        try {
+            String[] sortParams = sort.split(",");
+            Sort.Direction direction = sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc")
+                    ? Sort.Direction.DESC
+                    : Sort.Direction.ASC;
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
+
+            log.info("Fetching all transactions as ADMIN, filters: type={}, amountFrom={}, amountTo={}, createdAtFrom={}, createdAtTo={}, cardId={}, page={}, size={}, sort={}",
+                    type, amountFrom, amountTo, createdAtFrom, createdAtTo, cardId, page, size, sort);
+
+            TransactionFilter filter = new TransactionFilter();
+            filter.setType(type);
+            filter.setAmountFrom(amountFrom);
+            filter.setAmountTo(amountTo);
+            filter.setCreatedAtFrom(createdAtFrom);
+            filter.setCreatedAtTo(createdAtTo);
+            filter.setCardId(cardId);
+
+            List<TransactionDto> transactions = transactionService.getTransactions(null, filter, pageable);
+
+            return ResponseEntity.ok(transactions);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid sort parameter: {}", sort);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort parameter");
+        }
+    }
 
 }

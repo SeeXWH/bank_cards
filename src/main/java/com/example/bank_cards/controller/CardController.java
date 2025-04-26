@@ -185,7 +185,7 @@ public class CardController {
         }
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id}/delete")
     @Operation(summary = "Удаление карты",
             description = "Удаляет карту по указанному идентификатору")
     @ApiResponses(value = {
