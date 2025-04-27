@@ -15,6 +15,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +28,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.server.ResponseStatusException;
@@ -30,6 +36,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.UUID;
 
+@Validated
 @RestController
 @RequestMapping("/api/cards")
 @RequiredArgsConstructor
@@ -64,7 +71,7 @@ public class CardController {
             )
     )
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
-    public ResponseEntity<CardDto> createCard(@RequestBody CardCreateDto cardCreateDto) {
+    public ResponseEntity<CardDto> createCard(@RequestBody @NotNull(message = "json cannot be null") @Valid CardCreateDto cardCreateDto) {
         CardDto createdCard = cardService.createCard(cardCreateDto);
         return ResponseEntity.ok(createdCard);
     }
@@ -90,8 +97,8 @@ public class CardController {
     })
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<CardDto> setCardStatus(
-            @RequestParam UUID id,
-            @RequestParam CardStatus status) {
+            @RequestParam @NotNull(message = "id cannot be null or empty") UUID id,
+            @RequestParam @NotNull(message = "status cannot be null or empty") CardStatus status) {
         CardDto updatedCard = cardService.setCardStatus(id, status);
         return ResponseEntity.ok(updatedCard);
     }
@@ -118,9 +125,9 @@ public class CardController {
     public ResponseEntity<List<CardDto>> getCurrentUserCards(
             Authentication authentication,
             @RequestParam(required = false) CardStatus status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "expiryDate,asc") String sort) {
+            @RequestParam(defaultValue = "0")   @PositiveOrZero(message = "page must be greater than or equal to zero") int page,
+            @RequestParam(defaultValue = "10")  @PositiveOrZero(message = "page must be greater than or equal to zero") int size,
+            @RequestParam(defaultValue = "expiryDate,asc")  String sort) {
         try {
             String[] sortParams = sort.split(",");
             Sort.Direction direction = sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc")
@@ -155,11 +162,11 @@ public class CardController {
     })
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<List<CardDto>> getCardsByUser(
-            @RequestParam String email,
-            @RequestParam(required = false) CardStatus status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "expiryDate,asc") String sort) {
+            @RequestParam @NotBlank(message = "email cannot be null or empty") @Email(message = "email must be email pattern") String email,
+            @RequestParam(required = false)  CardStatus status,
+            @RequestParam(defaultValue = "0")  @PositiveOrZero(message = "page must be greater than or equal to zero") int page,
+            @RequestParam(defaultValue = "10") @PositiveOrZero(message = "size must be greater than or equal to zero") int size,
+            @RequestParam(defaultValue = "expiryDate,asc")  String sort) {
         try {
             String[] sortParams = sort.split(",");
             Sort.Direction direction = sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc")
@@ -188,7 +195,7 @@ public class CardController {
     })
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteCard(
-            @PathVariable UUID id) {
+            @PathVariable @NotNull(message = "id cannot be null or empty") UUID id) {
         cardService.deleteCard(id);
         return ResponseEntity.noContent().build();
     }
@@ -231,8 +238,8 @@ public class CardController {
     public ResponseEntity<CardDto> updateCardLimits(
             @Parameter(description = "UUID карты", required = true,
                     example = "123e4567-e89b-12d3-a456-426614174000")
-            @PathVariable UUID id,
-            @RequestBody CardLimitDto cardLimitDto) {
+            @PathVariable @NotNull(message = "id cannot be null or empty") UUID id,
+            @RequestBody @NotNull(message = "limit cannot be null") @Valid CardLimitDto cardLimitDto) {
         CardDto updatedCard = cardService.setCardLimit(id, cardLimitDto);
         return ResponseEntity.ok(updatedCard);
     }
@@ -252,7 +259,7 @@ public class CardController {
                     example = "123e4567-e89b-12d3-a456-426614174000")
     })
     public ResponseEntity<String> getCardNumber(
-            @PathVariable UUID id) {
+            @PathVariable @NotNull(message = "id cannot be null or empty") UUID id) {
         String decryptedNumber = cardService.getCardNumber(id);
         return ResponseEntity.ok(decryptedNumber);
     }

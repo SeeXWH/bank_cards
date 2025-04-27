@@ -32,8 +32,6 @@ public interface CardServiceImpl {
 
     void updateCard(Card card);
 
-    void validateCardCreationRequest(CardCreateDto dto);
-
     Card getCardById(UUID id);
 
     Card buildNewCard(AppUser owner, LocalDate expiryDate);

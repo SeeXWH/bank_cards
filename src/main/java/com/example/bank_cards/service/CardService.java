@@ -18,7 +18,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -41,7 +40,6 @@ public class CardService implements CardServiceImpl {
     @Override
     @Transactional
     public CardDto createCard(CardCreateDto dto) {
-        validateCardCreationRequest(dto);
         AppUser owner = userService.getUserByEmail(dto.getEmail());
         Card card = buildNewCard(owner, dto.getExpiryDate());
         cardRepository.save(card);
@@ -52,10 +50,6 @@ public class CardService implements CardServiceImpl {
     @Override
     @Transactional
     public CardDto setCardStatus(UUID id, CardStatus status) {
-        if (id == null || status == null) {
-            log.warn("Set card status failed: id or status is null.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID and status cannot be null");
-        }
         if (status == CardStatus.EXPIRED) {
             log.warn("Attempt to manually set status to EXPIRED.");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot manually set status to EXPIRED");
@@ -70,12 +64,7 @@ public class CardService implements CardServiceImpl {
     @Override
     @Transactional(readOnly = true)
     public List<CardDto> getCardsByUserEmail(String email, CardStatus status, Pageable pageable) {
-        if (!StringUtils.hasText(email)) {
-            log.warn("Get cards failed: email is blank.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email cannot be empty");
-        }
         userService.getUserByEmail(email);
-
         Specification<Card> spec = (root, query, cb) -> cb.equal(root.get("owner").get("email"), email);
         if (status != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
@@ -101,10 +90,6 @@ public class CardService implements CardServiceImpl {
     @Override
     @Transactional
     public CardDto setCardLimit(UUID id, CardLimitDto limitDto) {
-        if (id == null || limitDto == null) {
-            log.warn("Set card limit failed: id or limit is null.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID and limit cannot be null");
-        }
         Card card = getCardById(id);
         if (limitDto.getDailyLimit() != null) {
             card.setDailyLimit(limitDto.getDailyLimit());
@@ -127,10 +112,6 @@ public class CardService implements CardServiceImpl {
     @Override
     @Transactional(readOnly = true)
     public Card findCardByNumber(String cardNumber) {
-        if (!StringUtils.hasText(cardNumber)) {
-            log.warn("Find card by number failed: card number is blank.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Card number cannot be empty");
-        }
         String encryptedNumber = cardEncryptionService.encryptCardNumber(cardNumber);
         return cardRepository.findByCardNumber(encryptedNumber)
                 .orElseThrow(() -> {
@@ -142,10 +123,6 @@ public class CardService implements CardServiceImpl {
     @Override
     @Transactional(readOnly = true)
     public Card findCardById(UUID id) {
-        if (id == null) {
-            log.warn("Find card by id failed: id is null.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID cannot be null");
-        }
         return cardRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("Card not found with id: {}", id);
@@ -156,10 +133,6 @@ public class CardService implements CardServiceImpl {
     @Override
     @Transactional
     public void updateCard(Card card) {
-        if (card == null) {
-            log.warn("Update card failed: card is null.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Card cannot be null");
-        }
         if (!cardRepository.existsById(card.getId())) {
             log.warn("Update card failed: card not found with id: {}", card.getId());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found");
@@ -168,28 +141,9 @@ public class CardService implements CardServiceImpl {
         log.info("Card updated: id {}", card.getId());
     }
 
-    @Override
-    public void validateCardCreationRequest(CardCreateDto dto) {
-        if (dto == null) {
-            log.warn("Card creation failed: request is null.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request cannot be null");
-        }
-        if (!StringUtils.hasText(dto.getEmail())) {
-            log.warn("Card creation failed: email is blank.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email cannot be empty");
-        }
-        if (dto.getExpiryDate() == null || dto.getExpiryDate().isBefore(LocalDate.now())) {
-            log.warn("Card creation failed: invalid expiry date: {}", dto.getExpiryDate());
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid expiry date");
-        }
-    }
 
     @Override
     public Card getCardById(UUID id) {
-        if (id == null) {
-            log.warn("Get card by id failed: id is null.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID cannot be null");
-        }
         return cardRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("Card not found with id: {}", id);

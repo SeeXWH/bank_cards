@@ -1,5 +1,6 @@
 package com.example.bank_cards.controller;
 
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
@@ -45,6 +46,15 @@ public class GlobalExceptionHandler {
                 .contentType(MediaType.TEXT_PLAIN)
                 .body("Malformed JSON request");
     }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<String> handleConstraintViolationException(ConstraintViolationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body(ex.getMessage());
+    }
+
+
 
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
