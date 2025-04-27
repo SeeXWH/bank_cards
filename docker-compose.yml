@@ -1,0 +1,23 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/CardsDB
+      - SPRING_DATASOURCE_USERNAME=Userr
+      - SPRING_DATASOURCE_PASSWORD=12345
+  postgres:
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=Userr
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_DB=CardsDB
+    ports:
+      - "5432:5432"
