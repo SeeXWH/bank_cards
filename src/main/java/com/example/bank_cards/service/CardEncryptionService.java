@@ -1,5 +1,6 @@
 package com.example.bank_cards.service;
 
+import com.example.bank_cards.serviceInterface.CardEncryptionServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -10,9 +11,10 @@ import java.util.Base64;
 
 @Service
 @Slf4j
-public class CardEncryptionService {
+public class CardEncryptionService implements CardEncryptionServiceImpl {
 
     private final SecretKeySpec key;
+
 
     public CardEncryptionService(@Value("${encryption.secret}") String secret) {
         byte[] keyBytes = new byte[32];
@@ -21,6 +23,7 @@ public class CardEncryptionService {
         this.key = new SecretKeySpec(keyBytes, "AES");
     }
 
+    @Override
     public String encryptCardNumber(String cardNumber) {
         if (!cardNumber.matches("\\d{16}")) {
             throw new IllegalArgumentException("Card number must be 16 digits");
@@ -36,6 +39,7 @@ public class CardEncryptionService {
         }
     }
 
+    @Override
     public String decryptCardNumber(String encryptedCardNumber) {
         try {
             Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
@@ -48,6 +52,7 @@ public class CardEncryptionService {
         }
     }
 
+    @Override
     public String maskCardNumber(String encryptedCardNumber) {
         String decrypted = decryptCardNumber(encryptedCardNumber);
         return decrypted.substring(0, 4) + "******" + decrypted.substring(12);

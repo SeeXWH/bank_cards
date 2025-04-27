@@ -3,6 +3,7 @@ package com.example.bank_cards.service;
 import com.example.bank_cards.enums.CardStatus;
 import com.example.bank_cards.model.Card;
 import com.example.bank_cards.repository.CardRepository;
+import com.example.bank_cards.serviceInterface.CardMaintenanceServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,10 +16,11 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CardMaintenanceService {
+public class CardMaintenanceService implements CardMaintenanceServiceImpl {
 
     private final CardRepository cardRepository;
 
+    @Override
     @Scheduled(cron = "0 0 1 * * *", zone = "Europe/Moscow")
     @Transactional
     public void expireOverdueCards() {
@@ -34,6 +36,7 @@ public class CardMaintenanceService {
         }
     }
 
+    @Override
     @Scheduled(cron = "0 5 0 * * *", zone = "Europe/Moscow")
     @Transactional
     public void resetDailyLimits() {
@@ -45,6 +48,7 @@ public class CardMaintenanceService {
         }
     }
 
+    @Override
     @Scheduled(cron = "0 10 0 1 * *", zone = "Europe/Moscow")
     @Transactional
     public void resetMonthlyLimits() {

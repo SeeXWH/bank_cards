@@ -7,8 +7,11 @@ import com.example.bank_cards.enums.TransactionType;
 import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.model.Card;
 import com.example.bank_cards.model.Transaction;
-import com.example.bank_cards.repository.CardRepository;
 import com.example.bank_cards.repository.TransactionRepository;
+import com.example.bank_cards.serviceInterface.CardEncryptionServiceImpl;
+import com.example.bank_cards.serviceInterface.CardServiceImpl;
+import com.example.bank_cards.serviceInterface.TransactionServiceImpl;
+import com.example.bank_cards.serviceInterface.UserServiceImpl;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -31,12 +34,13 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Log4j2
-public class TransactionService {
+public class TransactionService implements TransactionServiceImpl {
     private final TransactionRepository transactionRepository;
-    private final CardService cardService;
-    private final UserService userService;
-    private final CardEncryptionService cardEncryptionService;
+    private final CardServiceImpl cardService;
+    private final UserServiceImpl userService;
+    private final CardEncryptionServiceImpl cardEncryptionService;
 
+    @Override
     @Transactional
     public void transferBetweenCards(UUID sendCartId, UUID receiveCartId, BigDecimal amount, String email) {
         log.info("Starting transfer between cards. SenderCardId: {}, ReceiverCardId: {}, Amount: {}, UserEmail: {}", sendCartId, receiveCartId, amount, email);
@@ -73,6 +77,7 @@ public class TransactionService {
         log.info("Transfer successful. TransactionId: {}", transaction.getId());
     }
 
+    @Override
     @Transactional
     public void debitFromCard(UUID cardId, BigDecimal amount, String email) {
         log.info("Starting debit from card. CardId: {}, Amount: {}, UserEmail: {}", cardId, amount, email);
@@ -107,6 +112,7 @@ public class TransactionService {
         log.info("Debit successful. TransactionId: {}", transaction.getId());
     }
 
+    @Override
     @Transactional
     public void topUpCard(UUID cardId, BigDecimal amount, String email) {
         log.info("Starting top-up to card. CardId: {}, Amount: {}, UserEmail: {}", cardId, amount, email);
@@ -139,7 +145,8 @@ public class TransactionService {
         log.info("Top-up successful. TransactionId: {}", transaction.getId());
     }
 
-    private void verifyingPossibilityOfTransaction(Card card, BigDecimal transactionAmount, TransactionType transactionType) {
+    @Override
+    public void verifyingPossibilityOfTransaction(Card card, BigDecimal transactionAmount, TransactionType transactionType) {
         if (card.getStatus() == CardStatus.BLOCKED) {
             log.warn("Transaction verification failed: Card {} is BLOCKED", card.getId());
             throw new ResponseStatusException(HttpStatus.LOCKED, "The card has blocked");
@@ -164,6 +171,7 @@ public class TransactionService {
         }
     }
 
+    @Override
     @Transactional(readOnly = true)
     public List<TransactionDto> getTransactions(String userEmail, TransactionFilter filter, Pageable pageable) {
         log.info("Fetching transactions, userEmail: {}, filters: {}", userEmail, filter);
@@ -225,7 +233,8 @@ public class TransactionService {
                 .toList();
     }
 
-    private void verifyingPossibilityOfTransaction(Card card) {
+    @Override
+    public void verifyingPossibilityOfTransaction(Card card) {
         if (card.getStatus() == CardStatus.BLOCKED) {
             log.warn("Card {} is BLOCKED", card.getId());
             throw new ResponseStatusException(HttpStatus.LOCKED, "The card has blocked");
@@ -236,7 +245,8 @@ public class TransactionService {
         }
     }
 
-    private TransactionDto transactionToDto(Transaction transaction) {
+    @Override
+    public TransactionDto transactionToDto(Transaction transaction) {
         TransactionDto transactionDto = new TransactionDto();
         transactionDto.setId(transaction.getId());
         transactionDto.setAmount(transaction.getAmount());

@@ -6,6 +6,7 @@ import com.example.bank_cards.enums.Role;
 import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.repository.UserRepository;
 import com.example.bank_cards.security.JwtTokenProvider;
+import com.example.bank_cards.serviceInterface.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
@@ -24,7 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 @Log4j2
-public class UserService {
+public class UserService implements UserServiceImpl {
 
     private static final int MIN_PASSWORD_LENGTH = 8;
 
@@ -33,6 +34,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+
+    @Override
     @Transactional
     public String registerUser(@RequestBody RegistrationDto user) {
         log.info("Attempting to register user with email: {}", user.getEmail());
@@ -63,6 +66,7 @@ public class UserService {
         return token;
     }
 
+    @Override
     public String authenticateUser(@RequestBody LoginDto user) {
         log.info("Attempting to authenticate user with email: {}", user.getEmail());
         if (!StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(user.getPassword())) {
@@ -83,6 +87,7 @@ public class UserService {
         return token;
     }
 
+    @Override
     @Transactional(readOnly = true)
     public AppUser getUserByEmail(String email) {
         log.debug("Attempting to retrieve user by email: {}", email);
@@ -96,6 +101,7 @@ public class UserService {
                 });
     }
 
+    @Override
     @Transactional
     public void changeRoleUser(String email, Role role) {
         log.info("Attempting to change role for user with email: {} to role: {}", email, role);
@@ -137,6 +143,7 @@ public class UserService {
         }
     }
 
+    @Override
     @Transactional
     public void lockUser(String email) {
         log.info("Attempting to lock user with email: {}", email);
@@ -150,6 +157,7 @@ public class UserService {
         log.info("User locked successfully with email: {}", email);
     }
 
+    @Override
     @Transactional
     public void unlockUser(String email) {
         log.info("Attempting to unlock user with email: {}", email);

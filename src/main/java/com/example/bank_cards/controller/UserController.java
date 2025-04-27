@@ -5,7 +5,7 @@ import com.example.bank_cards.dto.LoginDto;
 import com.example.bank_cards.dto.RegistrationDto;
 import com.example.bank_cards.enums.Role;
 import com.example.bank_cards.model.AppUser;
-import com.example.bank_cards.service.UserService;
+import com.example.bank_cards.serviceInterface.UserServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "UserController")
 public class UserController {
 
-    private final UserService userService;
+    private final UserServiceImpl userService;
 
     @PostMapping("/register")
     @Operation(summary = "Регистрация нового пользователя",

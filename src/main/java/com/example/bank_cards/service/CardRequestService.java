@@ -7,6 +7,9 @@ import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.model.Card;
 import com.example.bank_cards.model.CardRequest;
 import com.example.bank_cards.repository.CardRequestRepository;
+import com.example.bank_cards.serviceInterface.CardRequestServiceImpl;
+import com.example.bank_cards.serviceInterface.CardServiceImpl;
+import com.example.bank_cards.serviceInterface.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
@@ -27,12 +30,13 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Log4j2
-public class CardRequestService {
+public class CardRequestService implements CardRequestServiceImpl {
 
     private final CardRequestRepository cardRequestRepository;
-    private final UserService userService;
-    private final CardService cardService;
+    private final UserServiceImpl userService;
+    private final CardServiceImpl cardService;
 
+    @Override
     @Transactional
     public void crateRequestToCreateCard(String email) {
         if (!StringUtils.hasText(email)) {
@@ -49,6 +53,7 @@ public class CardRequestService {
         log.debug("Card creation request saved for user: {}", user.getEmail());
     }
 
+    @Override
     @Transactional
     public void createRequestToBlockCard(String email, BlockCardRequestDto blockCardRequestDto) {
         if (!StringUtils.hasText(blockCardRequestDto.getCardNumber())) {
@@ -77,6 +82,7 @@ public class CardRequestService {
         log.debug("Block card request saved for card: {}", card.getId());
     }
 
+    @Override
     @Transactional
     public CardRequest setRequestStatus(UUID requestId, RequestStatus requestStatus) {
         if (requestId == null || requestStatus == null) {
@@ -95,6 +101,7 @@ public class CardRequestService {
         return updatedRequest;
     }
 
+    @Override
     @Transactional(readOnly = true)
     public List<CardRequest> getCardRequestsWithFilter(
             String userEmail,

@@ -7,6 +7,9 @@ import com.example.bank_cards.enums.CardStatus;
 import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.model.Card;
 import com.example.bank_cards.repository.CardRepository;
+import com.example.bank_cards.serviceInterface.CardEncryptionServiceImpl;
+import com.example.bank_cards.serviceInterface.CardServiceImpl;
+import com.example.bank_cards.serviceInterface.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
@@ -28,13 +31,14 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Log4j2
-public class CardService {
+public class CardService implements CardServiceImpl {
 
     private final Random random = new Random();
     private final CardRepository cardRepository;
-    private final UserService userService;
-    private final CardEncryptionService cardEncryptionService;
+    private final UserServiceImpl userService;
+    private final CardEncryptionServiceImpl cardEncryptionService;
 
+    @Override
     @Transactional
     public CardDto createCard(CardCreateDto dto) {
         validateCardCreationRequest(dto);
@@ -45,6 +49,7 @@ public class CardService {
         return buildCardDto(card);
     }
 
+    @Override
     @Transactional
     public CardDto setCardStatus(UUID id, CardStatus status) {
         if (id == null || status == null) {
@@ -62,6 +67,7 @@ public class CardService {
         return buildCardDto(card);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public List<CardDto> getCardsByUserEmail(String email, CardStatus status, Pageable pageable) {
         if (!StringUtils.hasText(email)) {
@@ -84,6 +90,7 @@ public class CardService {
         return cardsPage.map(this::buildCardDto).getContent();
     }
 
+    @Override
     @Transactional
     public void deleteCard(UUID id) {
         Card card = getCardById(id);
@@ -91,6 +98,7 @@ public class CardService {
         log.info("Deleted card with id: {}", id);
     }
 
+    @Override
     @Transactional
     public CardDto setCardLimit(UUID id, CardLimitDto limitDto) {
         if (id == null || limitDto == null) {
@@ -109,12 +117,14 @@ public class CardService {
         return buildCardDto(card);
     }
 
+    @Override
     @Transactional
     public String getCardNumber(UUID id) {
         Card card = getCardById(id);
         return cardEncryptionService.decryptCardNumber(card.getCardNumber());
     }
 
+    @Override
     @Transactional(readOnly = true)
     public Card findCardByNumber(String cardNumber) {
         if (!StringUtils.hasText(cardNumber)) {
@@ -129,6 +139,7 @@ public class CardService {
                 });
     }
 
+    @Override
     @Transactional(readOnly = true)
     public Card findCardById(UUID id) {
         if (id == null) {
@@ -142,6 +153,7 @@ public class CardService {
                 });
     }
 
+    @Override
     @Transactional
     public void updateCard(Card card) {
         if (card == null) {
@@ -156,7 +168,8 @@ public class CardService {
         log.info("Card updated: id {}", card.getId());
     }
 
-    private void validateCardCreationRequest(CardCreateDto dto) {
+    @Override
+    public void validateCardCreationRequest(CardCreateDto dto) {
         if (dto == null) {
             log.warn("Card creation failed: request is null.");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request cannot be null");
@@ -171,7 +184,8 @@ public class CardService {
         }
     }
 
-    private Card getCardById(UUID id) {
+    @Override
+    public Card getCardById(UUID id) {
         if (id == null) {
             log.warn("Get card by id failed: id is null.");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID cannot be null");
@@ -183,7 +197,8 @@ public class CardService {
                 });
     }
 
-    private Card buildNewCard(AppUser owner, LocalDate expiryDate) {
+    @Override
+    public Card buildNewCard(AppUser owner, LocalDate expiryDate) {
         String number = generateUniqueCardNumber();
         String encryptedNumber = cardEncryptionService.encryptCardNumber(number);
 
@@ -196,7 +211,8 @@ public class CardService {
         return card;
     }
 
-    private CardDto buildCardDto(Card card) {
+    @Override
+    public CardDto buildCardDto(Card card) {
         CardDto dto = new CardDto();
         dto.setId(card.getId());
         dto.setCardNumber(cardEncryptionService.maskCardNumber(card.getCardNumber()));
@@ -209,6 +225,7 @@ public class CardService {
         return dto;
     }
 
+    @Override
     public String generateUniqueCardNumber() {
         String cardNumber;
         do {
@@ -217,7 +234,8 @@ public class CardService {
         return cardNumber;
     }
 
-    private String generateRawCardNumber() {
+    @Override
+    public String generateRawCardNumber() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 4; i++) {
             sb.append(String.format("%04d", random.nextInt(10000)));

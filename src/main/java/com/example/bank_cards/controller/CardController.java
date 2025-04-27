@@ -5,7 +5,7 @@ import com.example.bank_cards.dto.CardDto;
 import com.example.bank_cards.dto.CardLimitDto;
 import com.example.bank_cards.enums.CardStatus;
 import com.example.bank_cards.model.Card;
-import com.example.bank_cards.service.CardService;
+import com.example.bank_cards.serviceInterface.CardServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -37,7 +37,7 @@ import java.util.UUID;
 @Tag(name = "CardController")
 public class CardController {
 
-    private final CardService cardService;
+    private final CardServiceImpl cardService;
 
     @PostMapping("/create-card")
     @Operation(summary = "Создание новой карты",

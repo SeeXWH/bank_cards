@@ -4,7 +4,7 @@ import com.example.bank_cards.dto.BlockCardRequestDto;
 import com.example.bank_cards.enums.RequestStatus;
 import com.example.bank_cards.enums.RequestType;
 import com.example.bank_cards.model.CardRequest;
-import com.example.bank_cards.service.CardRequestService;
+import com.example.bank_cards.serviceInterface.CardRequestServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -38,7 +38,7 @@ import java.util.UUID;
 @Tag(name = "CardRequestController")
 public class CardRequestController {
 
-    private final CardRequestService cardRequestService;
+    private final CardRequestServiceImpl cardRequestService;
 
     @PostMapping("/create-card")
     @Operation(summary = "Запрос на создание новой карты",

@@ -2,7 +2,7 @@ package com.example.bank_cards.controller;
 
 import com.example.bank_cards.dto.*;
 import com.example.bank_cards.enums.TransactionType;
-import com.example.bank_cards.service.TransactionService;
+import com.example.bank_cards.serviceInterface.TransactionServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -36,7 +36,7 @@ import java.util.UUID;
 @Log4j2
 @Tag(name = "TransactionController")
 public class TransactionController {
-    private final TransactionService transactionService;
+    private final TransactionServiceImpl transactionService;
 
     @PostMapping("/transfer-between-cards")
     @Operation(summary = "Перевод между картами",
