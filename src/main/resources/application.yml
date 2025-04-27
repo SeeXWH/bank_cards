@@ -69,5 +69,19 @@ springdoc:
   api-docs:
     path: /api/api-docs
 
+bucket4j:
+  enabled: true
+  filters:
+    - cache-name: buckets 
+      url: .* 
+      rate-limits:
+        - bandwidths:
+            - capacity: 1 
+              time: 1 
+              unit: minutes 
+              refill-speed: greedy
+
+
+
 encryption:
   secret: ymMfhyWVONVZSsrVTbVAQdnSoCjQObleBrrqJEQCDIzYvGwSVm
