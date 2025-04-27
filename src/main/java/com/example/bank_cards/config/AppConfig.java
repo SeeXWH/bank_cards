@@ -13,16 +13,41 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Основной класс конфигурации для приложения.
+ * <p>
+ * Этот класс определяет и настраивает ключевые бины Spring,
+ * необходимые для функционирования приложения, включая компоненты безопасности,
+ * кодировщик паролей и стандартные HTTP заголовки.
+ * </p>
+ */
 @Configuration
 @Slf4j
 public class AppConfig {
+    /**
+     * Константа, определяющая силу для алгоритма хеширования BCrypt.
+     * Допустимый диапазон: 4-31.
+     */
     private static final int BCRYPT_STRENGTH = 8;
 
+    /**
+     * Метод инициализации, выполняемый после создания бина {@code AppConfig}.
+     * Логирует завершение инициализации конфигурации и используемую силу BCrypt.
+     */
     @PostConstruct
     public void initialize() {
         log.info("AppConfig initialization complete. BCrypt strength configured to: {}", BCRYPT_STRENGTH);
     }
 
+    /**
+     * Определяет бин {@link HttpHeaders}.
+     * <p>
+     * Предоставляет экземпляр {@code HttpHeaders} по умолчанию, который может быть
+     * внедрен в другие компоненты приложения при необходимости.
+     * </p>
+     *
+     * @return Новый экземпляр {@link HttpHeaders}. Гарантированно не {@code null}.
+     */
     @Bean
     @NonNull
     public HttpHeaders httpHeaders() {
@@ -31,6 +56,19 @@ public class AppConfig {
         return headers;
     }
 
+    /**
+     * Определяет бин {@link AuthenticationManager}.
+     * <p>
+     * Получает {@code AuthenticationManager} из предоставленной {@link AuthenticationConfiguration}.
+     * Этот менеджер является ключевым компонентом Spring Security для обработки аутентификации.
+     * </p>
+     *
+     * @param configuration Конфигурация аутентификации Spring Security. Не может быть {@code null}.
+     * @return Бин {@link AuthenticationManager}. Гарантированно не {@code null}.
+     * @throws ResponseStatusException если не удается получить {@code AuthenticationManager} из конфигурации,
+     *                             что указывает на проблемы с настройкой Spring Security. Генерируется исключение
+     *                             с HTTP статусом {@code 500 Internal Server Error}.
+     */
     @Bean
     @NonNull
     public AuthenticationManager authenticationManager(
@@ -50,6 +88,17 @@ public class AppConfig {
         }
     }
 
+    /**
+     * Определяет бин {@link PasswordEncoder} для хеширования паролей.
+     * <p>
+     * Использует {@link BCryptPasswordEncoder} с силой, заданной константой {@link #BCRYPT_STRENGTH}.
+     * Выполняет проверку допустимости значения силы BCrypt перед созданием бина.
+     * </p>
+     *
+     * @return Бин {@link PasswordEncoder} (реализация BCrypt). Гарантированно не {@code null}.
+     * @throws ResponseStatusException если значение {@link #BCRYPT_STRENGTH} находится вне допустимого диапазона (4-31).
+     *                             Генерируется исключение с HTTP статусом {@code 500 Internal Server Error}.
+     */
     @Bean
     @NonNull
     public PasswordEncoder passwordEncoder() {

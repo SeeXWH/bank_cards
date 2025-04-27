@@ -12,7 +12,7 @@ import java.util.UUID;
 
 public interface CardRequestServiceImpl {
 
-    void crateRequestToCreateCard(String email);
+    void createRequestToCreateCard(String email);
 
     void createRequestToBlockCard(String email, BlockCardRequestDto blockCardRequestDto);
 

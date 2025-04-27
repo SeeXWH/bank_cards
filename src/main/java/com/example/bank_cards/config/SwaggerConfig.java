@@ -27,11 +27,32 @@ public class SwaggerConfig {
     private static final String SECURITY_SCHEME_KEY = "BearerAuth";
     private static final String API_TITLE = "Bank cards Management API";
     private static final String API_VERSION = "1.0.0";
-    private static final String API_DESCRIPTION = "Bank cards Management API";
+    private static final String API_DESCRIPTION = """
+                                                  ## Полнофункциональное API для Системы Управления Банковскими Картами
+        
+                                                  Данное API предоставляет эндпоинты для комплексного управления банковскими картами, включая следующие функции:
+                                                  *   **Регистрация и авторизация пользователей:** Создание аккаунтов, вход в систему.
+                                                  *   **Операции с картами:** Проведение транзакций (снятие наличных, переводы между счетами, пополнение баланса).
+                                                  *   **Создание и хранение карт:** Генерация новых карт с автоматическим шифрованием и безопасным хранением реквизитов.
+                                                  *   **Управление лимитами:** Настройка дневных/месячных лимитов по операциям для каждой карты.
+                                                  *   **Пагинация и валидация данных:** Постраничная выдача результатов и строгая проверка входящих данных.
+        
+                                                  API соответствует RESTful-принципам и использует JSON для запросов и ответов.
+                                                  Для доступа к большинству эндпоинтов требуется аутентификация через Bearer Token (JWT).
+        
+                                                  **Ключевые особенности:**
+                                                  - Полностью зашифрованное хранение данных карт
+                                                  - Гибкая система лимитов
+                                                  - Подробные логи всех операций
+                                                  - Валидация данных на уровне API и бизнес-логики
+        
+                                                  *Для получения подробной информации о доступных методах, форматах запросов и кодах ошибок обратитесь к документации конкретных эндпоинтов.*
+                                                  """;
+
     private static final String TERMS_OF_SERVICE_URL = "https://example.com/terms";
-    private static final String CONTACT_NAME = "NONE";
-    private static final String CONTACT_URL = "NONE";
-    private static final String CONTACT_EMAIL = "NONE";
+    private static final String CONTACT_NAME = "SeeXWH";
+    private static final String CONTACT_URL = "https://github.com/SeeXWH/bank_cards";
+    private static final String CONTACT_EMAIL = "andreymikhailov.vma@gmail.com";
     private static final String LICENSE_NAME = "Apache 2.0";
     private static final String LICENSE_URL = "https://www.apache.org/licenses/LICENSE-2.0.html";
     private static final String EXTERNAL_DOCS_DESCRIPTION = "Detailed User Guide and Tutorials";
@@ -39,8 +60,20 @@ public class SwaggerConfig {
             + ".com/spreadsheets/d"
             + "/1FA4qztcINHl1qYFKsqb1AamFAMxMKXhM9uQXthHu_mk/edit?gid"
             + "=1533034060#gid=1533034060";
-    private static final String SECURITY_SCHEME_DESCRIPTION = "NONE";
-
+    private static final String SECURITY_SCHEME_DESCRIPTION = """
+                                                                Данное API использует аутентификацию с помощью **Bearer Token** на основе **JSON Web Tokens (JWT)**. 
+                                                                Для доступа к защищённым endpoint'ам необходимо сначала пройти аутентификацию (например, через `/api/users/login`), чтобы получить JWT-токен. 
+                                                    
+                                                                **Как использовать:** 
+                                                                1. Аутентифицируйтесь, используя свои учётные данные, чтобы получить access-токен. 
+                                                                2. Для последующих запросов к защищённым endpoint'ам добавьте HTTP-заголовок `Authorization`. 
+                                                                3. Укажите в заголовке `Authorization` схему `Bearer`, а затем ваш токен. 
+                                                                **Пример заголовка:** 
+                                                                ```http 
+                                                                Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c \s
+                                                                ``` 
+                                                                *Убедитесь, что токен корректно сформирован, не истёк и имеет необходимые права для запрашиваемой операции. Нажмите кнопку **Authorize** (или значок замка) ниже, чтобы глобально установить токен для тестирования запросов через Swagger UI.* \s
+                                                                """;
     @Value("${swagger.servers:http://localhost:8080}")
     private String serverUrls;
 
@@ -86,8 +119,7 @@ public class SwaggerConfig {
                     );
                     return server;
                 })
-                .collect(Collectors.toList())
-                ;
+                .collect(Collectors.toList());
 
         if (servers.isEmpty()) {
             log.warn("After parsing 'swagger.servers', no valid URLs were found. Using default server entry '/'.");
