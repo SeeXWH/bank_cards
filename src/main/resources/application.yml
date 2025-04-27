@@ -80,8 +80,7 @@ bucket4j:
               time: 1 
               unit: minutes 
               refill-speed: greedy
-
-
-
+cors:
+  allowed-origins: http://localhost:8080, http://localhost:3000
 encryption:
   secret: ymMfhyWVONVZSsrVTbVAQdnSoCjQObleBrrqJEQCDIzYvGwSVm
