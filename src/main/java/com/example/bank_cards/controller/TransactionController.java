@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -30,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Validated
 @RestController
 @RequestMapping("/api/transaction")
 @RequiredArgsConstructor
@@ -64,7 +68,8 @@ public class TransactionController {
                     }
             )
     )
-    public ResponseEntity<Void> transferBetweenCards(@RequestBody TransferRequestDto transferRequestDto, Authentication authentication) {
+    public ResponseEntity<Void> transferBetweenCards(@RequestBody @Valid TransferRequestDto transferRequestDto,
+                                                     Authentication authentication) {
         String email = authentication.getName();
         transactionService.transferBetweenCards(
                 transferRequestDto.getSendCardId(),
@@ -99,7 +104,8 @@ public class TransactionController {
                     }
             )
     )
-    public ResponseEntity<Void> debitFromCard(@RequestBody DebitRequestDto debitRequestDto, Authentication authentication) {
+    public ResponseEntity<Void> debitFromCard(@RequestBody @Valid DebitRequestDto debitRequestDto,
+                                              Authentication authentication) {
         String email = authentication.getName();
         transactionService.debitFromCard(
                 debitRequestDto.getCardId(),
@@ -134,7 +140,8 @@ public class TransactionController {
                     }
             )
     )
-    public ResponseEntity<Void> topUpCard(@RequestBody TopUpRequestDto topUpRequestDto, Authentication authentication) {
+    public ResponseEntity<Void> topUpCard(@RequestBody @Valid TopUpRequestDto topUpRequestDto,
+                                          Authentication authentication) {
         String email = authentication.getName();
         transactionService.topUpCard(
                 topUpRequestDto.getCardId(),
@@ -174,8 +181,8 @@ public class TransactionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtTo,
             @RequestParam(required = false) UUID cardId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") @PositiveOrZero(message = "page cannot be negative") int page,
+            @RequestParam(defaultValue = "10") @PositiveOrZero(message = "size cannot be negative") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort) {
 
         try {
@@ -229,8 +236,8 @@ public class TransactionController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime createdAtTo,
             @RequestParam(required = false) UUID cardId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") @PositiveOrZero(message = "page cannot be negative") int page,
+            @RequestParam(defaultValue = "10") @PositiveOrZero(message = "size cannot be negative") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort) {
 
         try {

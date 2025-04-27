@@ -14,6 +14,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +27,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -31,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Validated
 @RestController
 @RequestMapping("/api/card-requests")
 @RequiredArgsConstructor
@@ -82,7 +87,7 @@ public class CardRequestController {
     )
     public ResponseEntity<Void> blockCardRequest(
             Authentication authentication,
-            @RequestBody BlockCardRequestDto blockCardRequestDto) {
+            @RequestBody @Valid BlockCardRequestDto blockCardRequestDto) {
         String email = authentication.getName();
         cardRequestService.createRequestToBlockCard(email, blockCardRequestDto);
         return ResponseEntity.ok().build();
@@ -101,10 +106,9 @@ public class CardRequestController {
     })
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<CardRequest> updateRequestStatus(
-            Authentication authentication,
             @Parameter(description = "ID запроса", required = true)
-            @RequestParam UUID requestId,
-            @RequestParam RequestStatus requestStatus) {
+            @RequestParam @NotNull(message = "id cannot be null") UUID requestId,
+            @RequestParam @NotNull(message = "status cannot be null") RequestStatus requestStatus) {
         CardRequest cardRequest = cardRequestService.setRequestStatus(requestId, requestStatus);
         return ResponseEntity.ok(cardRequest);
     }
@@ -137,8 +141,8 @@ public class CardRequestController {
             @RequestParam(required = false) RequestStatus status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") @PositiveOrZero(message = "page cannot be negative") int page,
+            @RequestParam(defaultValue = "10") @PositiveOrZero(message = "size cannot be negative") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort
     ) {
         try {
@@ -180,8 +184,8 @@ public class CardRequestController {
             @RequestParam(required = false) RequestStatus status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") @PositiveOrZero(message = "page cannot be negative") int page,
+            @RequestParam(defaultValue = "10") @PositiveOrZero(message = "size cannot be negative") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort
     ) {
         try {

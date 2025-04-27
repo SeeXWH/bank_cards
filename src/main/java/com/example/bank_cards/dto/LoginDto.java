@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LoginDto {
+    @NotBlank(message = "Email cannot be null or empty")
     @Email(message = "Email should be a valid email address format")
     @Size(max = 100, message = "Email must not exceed 100 characters")
     private String email;

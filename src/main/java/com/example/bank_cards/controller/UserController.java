@@ -13,13 +13,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Validated
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -53,7 +59,7 @@ public class UserController {
                     }
             )
     )
-    public ResponseEntity<String> registerUser(@RequestBody RegistrationDto userDto) {
+    public ResponseEntity<String> registerUser(@RequestBody @Valid RegistrationDto userDto) {
         String token = userService.registerUser(userDto);
         return ResponseEntity.ok(token);
     }
@@ -82,7 +88,7 @@ public class UserController {
                     }
             )
     )
-    public ResponseEntity<String> authenticateUser(@RequestBody LoginDto userDto) {
+    public ResponseEntity<String> authenticateUser(@RequestBody @Valid LoginDto userDto) {
         String token = userService.authenticateUser(userDto);
         return ResponseEntity.ok(token);
     }
@@ -123,8 +129,8 @@ public class UserController {
     })
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> changeUserRole(
-            @RequestParam String email,
-            @RequestParam Role role
+            @RequestParam @NotBlank(message = "email cannot be null or empty") @Email(message = "Email should be a valid email address format") String email,
+            @RequestParam @NotNull(message = "role cannot be null or empty") Role role
     ) {
         userService.changeRoleUser(email, role);
         return ResponseEntity.ok().build();
@@ -132,14 +138,14 @@ public class UserController {
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PutMapping("/{email}/lock")
-    public ResponseEntity<Void> lockUser(@PathVariable String email) {
+    public ResponseEntity<Void> lockUser(@PathVariable @NotBlank(message = "email cannot be null or empty") @Email(message = "Email should be a valid email address format") String email) {
         userService.lockUser(email);
         return ResponseEntity.ok().build();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{email}/unlock")
-    public ResponseEntity<Void> unlockUser(@PathVariable String email) {
+    public ResponseEntity<Void> unlockUser(@PathVariable @NotBlank(message = "email cannot be null or empty") @Email(message = "Email should be a valid email address format") String email) {
         userService.unlockUser(email);
         return ResponseEntity.ok().build();
     }
