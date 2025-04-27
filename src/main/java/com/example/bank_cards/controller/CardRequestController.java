@@ -52,7 +52,6 @@ public class CardRequestController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> createCardRequest(Authentication authentication) {
         String email = authentication.getName();
-        log.info("Creating new card request for user: {}", email);
         cardRequestService.crateRequestToCreateCard(email);
         return ResponseEntity.ok().build();
     }
@@ -85,7 +84,6 @@ public class CardRequestController {
             Authentication authentication,
             @RequestBody BlockCardRequestDto blockCardRequestDto) {
         String email = authentication.getName();
-        log.info("Creating block card request for user: {}, card: {}", email, blockCardRequestDto.getCardNumber());
         cardRequestService.createRequestToBlockCard(email, blockCardRequestDto);
         return ResponseEntity.ok().build();
     }
@@ -107,11 +105,6 @@ public class CardRequestController {
             @Parameter(description = "ID запроса", required = true)
             @RequestParam UUID requestId,
             @RequestParam RequestStatus requestStatus) {
-
-        String email = authentication.getName();
-        log.info("Updating request status for user: {}, requestId: {}, new status: {}",
-                email, requestId, requestStatus);
-
         CardRequest cardRequest = cardRequestService.setRequestStatus(requestId, requestStatus);
         return ResponseEntity.ok(cardRequest);
     }
@@ -154,16 +147,11 @@ public class CardRequestController {
                     ? Sort.Direction.DESC
                     : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
-
-            log.info("Request card requests for user: {}, type: {}, status: {}, range: {} - {}, page: {}, size: {}, sort: {}",
-                    email, type, status, from, to, page, size, sort);
-
             List<CardRequest> requests = cardRequestService.getCardRequestsWithFilter(
                     email, type, status, from, to, pageable
             );
             return ResponseEntity.ok(requests);
         } catch (IllegalArgumentException e) {
-            log.warn("Invalid sort parameter: {}", sort);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort parameter");
         }
     }
@@ -203,16 +191,11 @@ public class CardRequestController {
                     ? Sort.Direction.DESC
                     : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
-
-            log.info("Fetching card requests for current user: {}, type: {}, status: {}, range: {} - {}, page: {}, size: {}, sort: {}",
-                    email, type, status, from, to, page, size, sort);
-
             List<CardRequest> requests = cardRequestService.getCardRequestsWithFilter(
                     email, type, status, from, to, pageable
             );
             return ResponseEntity.ok(requests);
         } catch (IllegalArgumentException e) {
-            log.warn("Invalid sort parameter: {}", sort);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort parameter");
         }
     }

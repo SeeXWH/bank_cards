@@ -54,7 +54,6 @@ public class UserController {
             )
     )
     public ResponseEntity<String> registerUser(@RequestBody RegistrationDto userDto) {
-        log.info("Registering new user with email: {}", userDto.getEmail());
         String token = userService.registerUser(userDto);
         return ResponseEntity.ok(token);
     }
@@ -84,7 +83,6 @@ public class UserController {
             )
     )
     public ResponseEntity<String> authenticateUser(@RequestBody LoginDto userDto) {
-        log.info("Authenticating user with email: {}", userDto.getEmail());
         String token = userService.authenticateUser(userDto);
         return ResponseEntity.ok(token);
     }
@@ -103,7 +101,6 @@ public class UserController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CurrentUserDto> getCurrentUser(Authentication authentication) {
         String phoneNumber = authentication.getName();
-        log.debug("Fetching details for currently authenticated user (principal): {}", phoneNumber);
         AppUser user = userService.getUserByEmail(phoneNumber);
         CurrentUserDto currentUserDto = new CurrentUserDto();
         currentUserDto.setEmail(user.getEmail());
@@ -129,7 +126,6 @@ public class UserController {
             @RequestParam String email,
             @RequestParam Role role
     ) {
-        log.info("Changing role for user with email: {} to {}", email, role);
         userService.changeRoleUser(email, role);
         return ResponseEntity.ok().build();
     }

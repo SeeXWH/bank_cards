@@ -65,7 +65,6 @@ public class CardController {
     )
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
     public ResponseEntity<CardDto> createCard(@RequestBody CardCreateDto cardCreateDto) {
-        log.info("Creating new card for user with email: {}", cardCreateDto.getEmail());
         CardDto createdCard = cardService.createCard(cardCreateDto);
         return ResponseEntity.ok(createdCard);
     }
@@ -93,13 +92,9 @@ public class CardController {
     public ResponseEntity<CardDto> setCardStatus(
             @RequestParam UUID id,
             @RequestParam CardStatus status) {
-        log.info("Attempting to change status for card ID: {} to status: {}", id, status);
         CardDto updatedCard = cardService.setCardStatus(id, status);
-        log.info("Successfully changed status for card ID: {}", id);
-
         return ResponseEntity.ok(updatedCard);
     }
-
     @GetMapping("/my-cards")
     @Operation(summary = "Получение карт текущего пользователя",
             description = "Возвращает список карт аутентифицированного пользователя с возможностью фильтрации по статусу")
@@ -126,20 +121,16 @@ public class CardController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "expiryDate,asc") String sort) {
-
         try {
             String[] sortParams = sort.split(",");
             Sort.Direction direction = sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc")
                     ? Sort.Direction.DESC
                     : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
-            log.info("Fetching cards for user: {}, status: {}, page: {}, size: {}, sort: {}",
-                    authentication.getName(), status, page, size, sort);
             List<CardDto> cards = cardService.getCardsByUserEmail(
                     authentication.getName(), status, pageable);
             return ResponseEntity.ok(cards);
         } catch (IllegalArgumentException e) {
-            log.warn("Invalid sort parameter: {}", sort);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort parameter");
         }
     }
@@ -175,16 +166,12 @@ public class CardController {
                     ? Sort.Direction.DESC
                     : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
-            log.info("Request cards for user: {}, status: {}, page: {}, size: {}, sort: {}",
-                    email, status, page, size, sort);
             List<CardDto> cards = cardService.getCardsByUserEmail(email, status, pageable);
             return ResponseEntity.ok(cards);
         } catch (IllegalArgumentException e) {
-            log.warn("Invalid sort parameter: {}", sort);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort parameter");
         }
     }
-
     @DeleteMapping("/{id}/delete")
     @Operation(summary = "Удаление карты",
             description = "Удаляет карту по указанному идентификатору")
@@ -202,11 +189,7 @@ public class CardController {
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteCard(
             @PathVariable UUID id) {
-        log.info("Attempt to delete card with ID: {}", id);
-
         cardService.deleteCard(id);
-
-        log.info("Card with ID: {} successfully deleted", id);
         return ResponseEntity.noContent().build();
     }
 
@@ -250,9 +233,7 @@ public class CardController {
                     example = "123e4567-e89b-12d3-a456-426614174000")
             @PathVariable UUID id,
             @RequestBody CardLimitDto cardLimitDto) {
-        log.info("Attempt to update limits for card ID: {}, limits: {}", id, cardLimitDto);
         CardDto updatedCard = cardService.setCardLimit(id, cardLimitDto);
-        log.info("Card limits updated successfully for card ID: {}", id);
         return ResponseEntity.ok(updatedCard);
     }
 
@@ -272,11 +253,7 @@ public class CardController {
     })
     public ResponseEntity<String> getCardNumber(
             @PathVariable UUID id) {
-        log.info("Requesting card number for card ID: {}", id);
-
         String decryptedNumber = cardService.getCardNumber(id);
-        log.debug("Successfully retrieved card number for ID: {}", id);
-
         return ResponseEntity.ok(decryptedNumber);
     }
 }

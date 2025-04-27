@@ -2,7 +2,6 @@ package com.example.bank_cards.controller;
 
 import com.example.bank_cards.dto.*;
 import com.example.bank_cards.enums.TransactionType;
-import com.example.bank_cards.model.Transaction;
 import com.example.bank_cards.service.TransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -185,10 +184,6 @@ public class TransactionController {
                     ? Sort.Direction.DESC
                     : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
-
-            log.info("Fetching transactions for user: {}, filters: type={}, amountFrom={}, amountTo={}, createdAtFrom={}, createdAtTo={}, cardId={}, page={}, size={}, sort={}",
-                    authentication.getName(), type, amountFrom, amountTo, createdAtFrom, createdAtTo, cardId, page, size, sort);
-
             TransactionFilter filter = new TransactionFilter();
             filter.setType(type);
             filter.setAmountFrom(amountFrom);
@@ -201,7 +196,6 @@ public class TransactionController {
 
             return ResponseEntity.ok(transactions);
         } catch (IllegalArgumentException e) {
-            log.warn("Invalid sort parameter: {}", sort);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort parameter");
         }
     }
@@ -245,10 +239,6 @@ public class TransactionController {
                     ? Sort.Direction.DESC
                     : Sort.Direction.ASC;
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
-
-            log.info("Fetching all transactions as ADMIN, filters: type={}, amountFrom={}, amountTo={}, createdAtFrom={}, createdAtTo={}, cardId={}, page={}, size={}, sort={}",
-                    type, amountFrom, amountTo, createdAtFrom, createdAtTo, cardId, page, size, sort);
-
             TransactionFilter filter = new TransactionFilter();
             filter.setType(type);
             filter.setAmountFrom(amountFrom);
@@ -261,7 +251,6 @@ public class TransactionController {
 
             return ResponseEntity.ok(transactions);
         } catch (IllegalArgumentException e) {
-            log.warn("Invalid sort parameter: {}", sort);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sort parameter");
         }
     }

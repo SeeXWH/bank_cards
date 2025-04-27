@@ -1,5 +1,6 @@
 package com.example.bank_cards.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -8,6 +9,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
 
 @Service
+@Slf4j
 public class CardEncryptionService {
 
     private final SecretKeySpec key;
@@ -29,6 +31,7 @@ public class CardEncryptionService {
             byte[] encrypted = cipher.doFinal(cardNumber.getBytes());
             return Base64.getEncoder().encodeToString(encrypted);
         } catch (Exception e) {
+            log.warn("error encrypting card number {}", e.getMessage());
             throw new RuntimeException("Encryption error", e);
         }
     }
@@ -40,6 +43,7 @@ public class CardEncryptionService {
             byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(encryptedCardNumber));
             return new String(decrypted);
         } catch (Exception e) {
+            log.warn("error decrypting card number {}", e.getMessage());
             throw new RuntimeException("Decryption error", e);
         }
     }

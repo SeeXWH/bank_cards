@@ -2,12 +2,11 @@ package com.example.bank_cards.service;
 
 import com.example.bank_cards.dto.CardCreateDto;
 import com.example.bank_cards.dto.CardDto;
+import com.example.bank_cards.dto.CardLimitDto;
 import com.example.bank_cards.enums.CardStatus;
 import com.example.bank_cards.model.AppUser;
 import com.example.bank_cards.model.Card;
-import com.example.bank_cards.dto.CardLimitDto;
 import com.example.bank_cards.repository.CardRepository;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
@@ -15,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -25,164 +25,170 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
-
 @Service
 @RequiredArgsConstructor
 @Log4j2
 public class CardService {
+
     private final Random random = new Random();
     private final CardRepository cardRepository;
     private final UserService userService;
     private final CardEncryptionService cardEncryptionService;
 
     @Transactional
-    public CardDto createCard(CardCreateDto cardCreateDto) {
-        validateCardCreationRequest(cardCreateDto);
-        AppUser owner = userService.getUserByEmail(cardCreateDto.getEmail());
-        Card card = buildNewCard(owner, cardCreateDto.getExpiryDate());
+    public CardDto createCard(CardCreateDto dto) {
+        validateCardCreationRequest(dto);
+        AppUser owner = userService.getUserByEmail(dto.getEmail());
+        Card card = buildNewCard(owner, dto.getExpiryDate());
         cardRepository.save(card);
-        return buildNewCardDto(card);
+        log.info("Created new card for user: {}", owner.getEmail());
+        return buildCardDto(card);
     }
 
     @Transactional
-    public CardDto setCardStatus(UUID id, CardStatus cardStatus) {
-        if (id == null || cardStatus == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id or status cannot be null or empty");
+    public CardDto setCardStatus(UUID id, CardStatus status) {
+        if (id == null || status == null) {
+            log.warn("Set card status failed: id or status is null.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID and status cannot be null");
         }
-        if (cardStatus == CardStatus.EXPIRED){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cannot manually set status to EXPIRED");
+        if (status == CardStatus.EXPIRED) {
+            log.warn("Attempt to manually set status to EXPIRED.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot manually set status to EXPIRED");
         }
-        Card card = cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
-        card.setStatus(cardStatus);
+        Card card = getCardById(id);
+        card.setStatus(status);
         cardRepository.save(card);
-        return buildNewCardDto(card);
-    }
-
-    private void validateCardCreationRequest(CardCreateDto dto) {
-        if (dto == null) {
-            log.warn("Card creation failed: request is null");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request cannot be null");
-        }
-
-        if (!StringUtils.hasText(dto.getEmail())) {
-            log.warn("Card creation failed: email is blank");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email cannot be empty");
-        }
-
-        if (dto.getExpiryDate() == null) {
-            log.warn("Card creation failed: expiry date is null");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Expiry date cannot be null");
-        }
-
-        if (dto.getExpiryDate().isBefore(LocalDate.now())) {
-            log.warn("Card creation failed: expiry date {} is in the past", dto.getExpiryDate());
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Expiry date cannot be in the past");
-        }
+        log.info("Card status updated for card id: {}", id);
+        return buildCardDto(card);
     }
 
     @Transactional(readOnly = true)
-    public List<CardDto> getCardsByUserEmail(String userEmail,
-                                             CardStatus statusFilter,
-                                             Pageable pageable) {
-        if (!StringUtils.hasText(userEmail)) {
-            log.warn("Attempt to get cards with empty user email");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User email cannot be empty");
+    public List<CardDto> getCardsByUserEmail(String email, CardStatus status, Pageable pageable) {
+        if (!StringUtils.hasText(email)) {
+            log.warn("Get cards failed: email is blank.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email cannot be empty");
+        }
+        userService.getUserByEmail(email);
+
+        Specification<Card> spec = (root, query, cb) -> cb.equal(root.get("owner").get("email"), email);
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
         }
 
-        log.info("Fetching cards for user: {}, status filter: {}", userEmail, statusFilter);
-        userService.getUserByEmail(userEmail);
-
-        Specification<Card> spec = (root, query, cb) ->
-                cb.equal(root.get("owner").get("email"), userEmail);
-        if (statusFilter != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.equal(root.get("status"), statusFilter));
-            log.debug("Added status filter: {}", statusFilter);
-        }
         Page<Card> cardsPage = cardRepository.findAll(spec, pageable);
         if (cardsPage.isEmpty()) {
-            log.info("No cards found for user: {}", userEmail);
+            log.info("No cards found for user: {}", email);
             return Collections.emptyList();
         }
-        log.debug("Found {} cards for user: {}", cardsPage.getTotalElements(), userEmail);
-        return cardsPage.getContent().stream()
-                .map(this::buildNewCardDto)
-                .toList();
+        log.info("Found {} cards for user: {}", cardsPage.getTotalElements(), email);
+        return cardsPage.map(this::buildCardDto).getContent();
     }
 
     @Transactional
     public void deleteCard(UUID id) {
-        if (id == null) {
-            log.warn("Attempt to delete card with null id");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id cannot be null or empty");
-        }
-        Card card = cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        Card card = getCardById(id);
         cardRepository.delete(card);
+        log.info("Deleted card with id: {}", id);
     }
 
     @Transactional
-    public CardDto setCardLimit(UUID id, CardLimitDto cardLimit) {
-        if (id == null || cardLimit == null) {
-            log.warn("Attempt to set limit with null id");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id or limit cannot be null or empty");
+    public CardDto setCardLimit(UUID id, CardLimitDto limitDto) {
+        if (id == null || limitDto == null) {
+            log.warn("Set card limit failed: id or limit is null.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID and limit cannot be null");
         }
-        Card card = cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
-        if (cardLimit.getDailyLimit() != null) {
-            card.setDailyLimit(cardLimit.getDailyLimit());
+        Card card = getCardById(id);
+        if (limitDto.getDailyLimit() != null) {
+            card.setDailyLimit(limitDto.getDailyLimit());
         }
-        if (cardLimit.getMonthlyLimit() != null) {
-            card.setMonthlyLimit(cardLimit.getMonthlyLimit());
+        if (limitDto.getMonthlyLimit() != null) {
+            card.setMonthlyLimit(limitDto.getMonthlyLimit());
         }
         cardRepository.save(card);
-        return buildNewCardDto(card);
+        log.info("Updated limits for card id: {}", id);
+        return buildCardDto(card);
     }
 
     @Transactional
     public String getCardNumber(UUID id) {
-        if (id == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id cannot be null or empty");
-        }
-        Card card = cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
-        String cryptNumber = card.getCardNumber();
-        return cardEncryptionService.decryptCardNumber(cryptNumber);
+        Card card = getCardById(id);
+        return cardEncryptionService.decryptCardNumber(card.getCardNumber());
     }
+
     @Transactional(readOnly = true)
     public Card findCardByNumber(String cardNumber) {
         if (!StringUtils.hasText(cardNumber)) {
-            log.warn("Request failed: card number is blank.");
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "card number cannot be null or empty"
-            );
+            log.warn("Find card by number failed: card number is blank.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Card number cannot be empty");
         }
-        String cryptNumber = cardEncryptionService.encryptCardNumber(cardNumber);
-        return cardRepository.findByCardNumber(cryptNumber).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        String encryptedNumber = cardEncryptionService.encryptCardNumber(cardNumber);
+        return cardRepository.findByCardNumber(encryptedNumber)
+                .orElseThrow(() -> {
+                    log.warn("Card not found with number: {}", cardNumber);
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found");
+                });
     }
 
     @Transactional(readOnly = true)
     public Card findCardById(UUID id) {
         if (id == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id cannot be null or empty");
+            log.warn("Find card by id failed: id is null.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID cannot be null");
         }
-        return cardRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found"));
+        return cardRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Card not found with id: {}", id);
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found");
+                });
     }
+
     @Transactional
-    public void updateCard(Card card){
+    public void updateCard(Card card) {
         if (card == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "card cannot be null or empty");
+            log.warn("Update card failed: card is null.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Card cannot be null");
         }
         if (!cardRepository.existsById(card.getId())) {
+            log.warn("Update card failed: card not found with id: {}", card.getId());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found");
         }
         cardRepository.save(card);
+        log.info("Card updated: id {}", card.getId());
     }
 
+    private void validateCardCreationRequest(CardCreateDto dto) {
+        if (dto == null) {
+            log.warn("Card creation failed: request is null.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request cannot be null");
+        }
+        if (!StringUtils.hasText(dto.getEmail())) {
+            log.warn("Card creation failed: email is blank.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email cannot be empty");
+        }
+        if (dto.getExpiryDate() == null || dto.getExpiryDate().isBefore(LocalDate.now())) {
+            log.warn("Card creation failed: invalid expiry date: {}", dto.getExpiryDate());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid expiry date");
+        }
+    }
+
+    private Card getCardById(UUID id) {
+        if (id == null) {
+            log.warn("Get card by id failed: id is null.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID cannot be null");
+        }
+        return cardRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Card not found with id: {}", id);
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found");
+                });
+    }
 
     private Card buildNewCard(AppUser owner, LocalDate expiryDate) {
-        Card card = new Card();
         String number = generateUniqueCardNumber();
-        String cryptNumber = cardEncryptionService.encryptCardNumber(number);
-        card.setCardNumber(cryptNumber);
+        String encryptedNumber = cardEncryptionService.encryptCardNumber(number);
+
+        Card card = new Card();
+        card.setCardNumber(encryptedNumber);
         card.setExpiryDate(expiryDate);
         card.setOwner(owner);
         card.setBalance(BigDecimal.ZERO);
@@ -190,37 +196,32 @@ public class CardService {
         return card;
     }
 
-    private CardDto buildNewCardDto(Card card) {
-        String cardNumber = cardEncryptionService.maskCardNumber(card.getCardNumber());
-        CardDto cardDto = new CardDto();
-        cardDto.setId(card.getId());
-        cardDto.setCardNumber(cardNumber);
-        cardDto.setExpiryDate(card.getExpiryDate());
-        cardDto.setDailyLimit(card.getDailyLimit());
-        cardDto.setMonthlyLimit(card.getMonthlyLimit());
-        cardDto.setStatus(card.getStatus());
-        cardDto.setBalance(card.getBalance());
-        cardDto.setOwnerName(card.getOwner().getName());
-        return cardDto;
+    private CardDto buildCardDto(Card card) {
+        CardDto dto = new CardDto();
+        dto.setId(card.getId());
+        dto.setCardNumber(cardEncryptionService.maskCardNumber(card.getCardNumber()));
+        dto.setExpiryDate(card.getExpiryDate());
+        dto.setDailyLimit(card.getDailyLimit());
+        dto.setMonthlyLimit(card.getMonthlyLimit());
+        dto.setStatus(card.getStatus());
+        dto.setBalance(card.getBalance());
+        dto.setOwnerName(card.getOwner().getName());
+        return dto;
     }
-
 
     public String generateUniqueCardNumber() {
         String cardNumber;
         do {
-            cardNumber = generateCardNumber();
-        } while (cardRepository.existsByCardNumber(cardNumber));
-
+            cardNumber = generateRawCardNumber();
+        } while (cardRepository.existsByCardNumber(cardEncryptionService.encryptCardNumber(cardNumber)));
         return cardNumber;
     }
 
-    private String generateCardNumber() {
+    private String generateRawCardNumber() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 4; i++) {
             sb.append(String.format("%04d", random.nextInt(10000)));
         }
         return sb.toString();
     }
-
-
 }
