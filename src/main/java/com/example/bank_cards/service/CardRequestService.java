@@ -39,10 +39,6 @@ public class CardRequestService implements CardRequestServiceImpl {
     @Override
     @Transactional
     public void crateRequestToCreateCard(String email) {
-        if (!StringUtils.hasText(email)) {
-            log.warn("Attempt to create card request with empty email");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email cannot be empty");
-        }
         AppUser user = userService.getUserByEmail(email);
         log.info("Creating card creation request for user: {}", user.getEmail());
         CardRequest cardRequest = new CardRequest();
@@ -56,13 +52,6 @@ public class CardRequestService implements CardRequestServiceImpl {
     @Override
     @Transactional
     public void createRequestToBlockCard(String email, BlockCardRequestDto blockCardRequestDto) {
-        if (!StringUtils.hasText(blockCardRequestDto.getCardNumber())) {
-            log.warn("Attempt to create block card request with empty card number");
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "card number cannot be null or empty"
-            );
-        }
         AppUser user = userService.getUserByEmail(email);
         Card card = cardService.findCardByNumber(blockCardRequestDto.getCardNumber());
         if (!Objects.equals(card.getOwner().getId(), user.getId())) {
@@ -85,10 +74,6 @@ public class CardRequestService implements CardRequestServiceImpl {
     @Override
     @Transactional
     public CardRequest setRequestStatus(UUID requestId, RequestStatus requestStatus) {
-        if (requestId == null || requestStatus == null) {
-            log.warn("Attempt to update request status with null id or status");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id or status cannot be null or empty");
-        }
         CardRequest cardRequest = cardRequestRepository.findById(requestId)
                 .orElseThrow(() -> {
                     log.warn("Card request not found: {}", requestId);

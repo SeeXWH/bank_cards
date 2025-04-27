@@ -45,11 +45,6 @@ public class TransactionService implements TransactionServiceImpl {
     public void transferBetweenCards(UUID sendCartId, UUID receiveCartId, BigDecimal amount, String email) {
         log.info("Starting transfer between cards. SenderCardId: {}, ReceiverCardId: {}, Amount: {}, UserEmail: {}", sendCartId, receiveCartId, amount, email);
 
-        if (sendCartId == null || receiveCartId == null || amount == null) {
-            log.error("Transfer failed: cards or amount is null");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cards or amount cannot be null");
-        }
-
         AppUser user = userService.getUserByEmail(email);
         Card sendCard = cardService.findCardById(sendCartId);
         Card receiveCard = cardService.findCardById(receiveCartId);
@@ -82,11 +77,6 @@ public class TransactionService implements TransactionServiceImpl {
     public void debitFromCard(UUID cardId, BigDecimal amount, String email) {
         log.info("Starting debit from card. CardId: {}, Amount: {}, UserEmail: {}", cardId, amount, email);
 
-        if (cardId == null || amount == null) {
-            log.error("Debit failed: card or amount is null");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "card or amount cannot be null");
-        }
-
         AppUser appUser = userService.getUserByEmail(email);
         Card card = cardService.findCardById(cardId);
 
@@ -116,11 +106,6 @@ public class TransactionService implements TransactionServiceImpl {
     @Transactional
     public void topUpCard(UUID cardId, BigDecimal amount, String email) {
         log.info("Starting top-up to card. CardId: {}, Amount: {}, UserEmail: {}", cardId, amount, email);
-
-        if (cardId == null || amount == null) {
-            log.error("Top-up failed: card or amount is null");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "card or amount cannot be null");
-        }
 
         AppUser appUser = userService.getUserByEmail(email);
         Card card = cardService.findCardById(cardId);

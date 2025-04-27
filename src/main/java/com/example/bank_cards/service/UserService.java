@@ -39,14 +39,6 @@ public class UserService implements UserServiceImpl {
     @Transactional
     public String registerUser(@RequestBody RegistrationDto user) {
         log.info("Attempting to register user with email: {}", user.getEmail());
-        if (!StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(user.getPassword()) || !StringUtils.hasText(user.getName())) {
-            log.warn("Registration failed: Email, password or name is blank.");
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Email, password and name cannot be null or empty"
-            );
-        }
-        isEmailValid(user.getEmail());
         isPasswordValid(user.getPassword());
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
             log.warn("Registration failed: User with email {} already exists.", user.getEmail());
@@ -69,14 +61,7 @@ public class UserService implements UserServiceImpl {
     @Override
     public String authenticateUser(@RequestBody LoginDto user) {
         log.info("Attempting to authenticate user with email: {}", user.getEmail());
-        if (!StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(user.getPassword())) {
-            log.warn("Authentication failed: Email or password is blank.");
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Email and password cannot be null or empty"
-            );
-        }
-        isEmailValid(user.getEmail());
+
         isPasswordValid(user.getPassword());
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword()));
@@ -105,13 +90,6 @@ public class UserService implements UserServiceImpl {
     @Transactional
     public void changeRoleUser(String email, Role role) {
         log.info("Attempting to change role for user with email: {} to role: {}", email, role);
-        if (!StringUtils.hasText(email) || role == null) {
-            log.warn("Change role failed: Email or role is blank.");
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Email and role cannot be null or empty"
-            );
-        }
         AppUser user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.warn("Change role failed: User not found with email: {}", email);
@@ -127,19 +105,6 @@ public class UserService implements UserServiceImpl {
         if (!check){
             log.warn("Password validation failed: Password does not meet minimum length requirement.");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid password");
-        }
-    }
-
-    public static void isEmailValid(String email) {
-        if (email == null || email.trim().isEmpty()) {
-            log.warn("Email validation failed: Email is blank.");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email");
-        }
-        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
-        boolean isValid = email.matches(emailRegex);
-        if (!isValid) {
-            log.warn("Email validation failed: Invalid email format: {}", email);
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email");
         }
     }
 
