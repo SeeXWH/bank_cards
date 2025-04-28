@@ -42,5 +42,7 @@ public class AppUser {
     @Column(nullable = false)
     private boolean locked = false;
 
-
+    public AppUser(UUID id) {
+        this.id = id;
+    }
 }

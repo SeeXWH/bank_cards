@@ -35,4 +35,6 @@ public interface CardRepository extends JpaRepository<Card, UUID>, JpaSpecificat
     @Modifying
     @Query("UPDATE Card c SET c.currentMonthlySpending = java.math.BigDecimal.ZERO WHERE c.monthlyLimit IS NOT NULL AND c.currentMonthlySpending > java.math.BigDecimal.ZERO")
     int resetAllMonthlySpendingLimits();
+
+    List<Card> findByOwnerId(UUID id);
 }
