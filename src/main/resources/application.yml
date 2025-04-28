@@ -2,20 +2,24 @@ spring:
   application:
     name: Cards-Api-System
   datasource:
-    url: jdbc:postgresql://localhost:5432/CardsDB
-    username: Userr
-    password: 12345
+    url: jdbc:postgresql://localhost:5432/CardsDB 
+    username: Userr                             
+    password: 12345                             
     hikari:
       connection-timeout: 30000
       maximum-pool-size: 10
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none 
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
         format_sql: true
     open-in-view: false
+    generate-ddl: false
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     serialization:
@@ -25,7 +29,7 @@ spring:
 security:
   user:
     admin=admin 
-    password=password
+    password=password 
 
 
 server:
@@ -44,7 +48,7 @@ logging:
     org:
       springframework: INFO
     com:
-      bank_cards: DEBUG
+      bank_cards: DEBUG 
   file:
     name: logs/bank_cards.log
 
@@ -72,13 +76,13 @@ springdoc:
 bucket4j:
   enabled: true
   filters:
-    - cache-name: buckets 
-      url: .* 
+    - cache-name: buckets
+      url: .*
       rate-limits:
         - bandwidths:
-            - capacity: 1 
-              time: 1 
-              unit: minutes 
+            - capacity: 1
+              time: 1
+              unit: minutes
               refill-speed: greedy
 cors:
   allowed-origins: http://localhost:8080, http://localhost:3000

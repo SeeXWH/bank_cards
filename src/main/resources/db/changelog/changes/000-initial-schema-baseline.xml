@@ -1,0 +1,83 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="SWH (generated)" id="1745878783879-1">
+        <createTable tableName="app_user">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="app_user_pkey"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="locked" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="password" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="SWH (generated)" id="1745878783879-2">
+        <createTable tableName="card_request">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="card_request_pkey"/>
+            </column>
+            <column name="card_id" type="UUID"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="status" type="VARCHAR(255)"/>
+            <column name="type" type="VARCHAR(255)"/>
+            <column name="owner_id" type="UUID"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="SWH (generated)" id="1745878783879-3">
+        <createTable tableName="card">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="card_pkey"/>
+            </column>
+            <column name="balance" type="numeric(38, 2)"/>
+            <column name="card_number" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_daily_spending" type="numeric(38, 2)"/>
+            <column name="current_monthly_spending" type="numeric(38, 2)"/>
+            <column name="daily_limit" type="numeric(38, 2)"/>
+            <column name="expiry_date" type="date"/>
+            <column name="monthly_limit" type="numeric(38, 2)"/>
+            <column name="status" type="VARCHAR(255)"/>
+            <column name="owner_id" type="UUID"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="SWH (generated)" id="1745878783879-4">
+        <createTable tableName="transaction">
+            <column name="id" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="transaction_pkey"/>
+            </column>
+            <column name="amount" type="numeric(38, 2)"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="type" type="VARCHAR(255)"/>
+            <column name="receive_card_id" type="UUID"/>
+            <column name="send_card_id" type="UUID"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="SWH (generated)" id="1745878783879-5">
+        <addUniqueConstraint columnNames="email" constraintName="uk1j9d9a06i600gd43uu3km82jw" tableName="app_user"/>
+    </changeSet>
+    <changeSet author="SWH (generated)" id="1745878783879-6">
+        <addUniqueConstraint columnNames="card_number" constraintName="ukby1nk98m2hq5onhl68bo09sc1" tableName="card"/>
+    </changeSet>
+    <changeSet author="SWH (generated)" id="1745878783879-7">
+        <addForeignKeyConstraint baseColumnNames="owner_id" baseTableName="card_request" constraintName="fk17f5j7248mmgshj564vdurcwm" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="app_user" validate="true"/>
+    </changeSet>
+    <changeSet author="SWH (generated)" id="1745878783879-8">
+        <addForeignKeyConstraint baseColumnNames="receive_card_id" baseTableName="transaction" constraintName="fk33u1c5h5uw6pgx9qhqt2mkeas" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="card" validate="true"/>
+    </changeSet>
+    <changeSet author="SWH (generated)" id="1745878783879-9">
+        <addForeignKeyConstraint baseColumnNames="send_card_id" baseTableName="transaction" constraintName="fk7b530vhouarwk0b3y6tekb6he" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="card" validate="true"/>
+    </changeSet>
+    <changeSet author="SWH (generated)" id="1745878783879-10">
+        <addForeignKeyConstraint baseColumnNames="owner_id" baseTableName="card" constraintName="fk99tol1gqj9duvuow94ac7cq9s" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="app_user" validate="true"/>
+    </changeSet>
+</databaseChangeLog>

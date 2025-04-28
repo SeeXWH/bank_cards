@@ -56,10 +56,7 @@ public class SwaggerConfig {
     private static final String LICENSE_NAME = "Apache 2.0";
     private static final String LICENSE_URL = "https://www.apache.org/licenses/LICENSE-2.0.html";
     private static final String EXTERNAL_DOCS_DESCRIPTION = "Detailed User Guide and Tutorials";
-    private static final String EXTERNAL_DOCS_URL = "https://docs.google"
-            + ".com/spreadsheets/d"
-            + "/1FA4qztcINHl1qYFKsqb1AamFAMxMKXhM9uQXthHu_mk/edit?gid"
-            + "=1533034060#gid=1533034060";
+    private static final String EXTERNAL_DOCS_URL = "https://github.com/SeeXWH";
     private static final String SECURITY_SCHEME_DESCRIPTION = """
                                                                 Данное API использует аутентификацию с помощью **Bearer Token** на основе **JSON Web Tokens (JWT)**. 
                                                                 Для доступа к защищённым endpoint'ам необходимо сначала пройти аутентификацию (например, через `/api/users/login`), чтобы получить JWT-токен. 
